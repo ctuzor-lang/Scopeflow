@@ -6,10 +6,11 @@ ScopeFlow keeps a shared, versioned record of what a supplier and its client agr
 
 ## Status
 
-Slices 1–2 built, not yet deployed:
+Slices 1–3 built, not yet deployed:
 
 - Slice 1: email-code sign-in, tenant-aware workspace, white-label branding settings, audit trail
 - Slice 2: projects, scope import from Excel/CSV (template at `/projects/template.csv`), draft editing, locked and fingerprinted baseline versions with changes shown against the previous version
+- Slice 3: change requests logged against a version, impact assessment (affected items, effort range, price, schedule, assumptions, risks), published as frozen revisions R1, R2… for the client's decision
 
 ## Running it locally
 
