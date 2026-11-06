@@ -6,7 +6,10 @@ ScopeFlow keeps a shared, versioned record of what a supplier and its client agr
 
 ## Status
 
-Slice 1 built: email-code sign-in, tenant-aware workspace, white-label branding settings, audit trail. Not yet deployed.
+Slices 1–2 built, not yet deployed:
+
+- Slice 1: email-code sign-in, tenant-aware workspace, white-label branding settings, audit trail
+- Slice 2: projects, scope import from Excel/CSV (template at `/projects/template.csv`), draft editing, locked and fingerprinted baseline versions with changes shown against the previous version
 
 ## Running it locally
 

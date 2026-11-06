@@ -55,7 +55,7 @@ h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.08; letter-s
 .btn.solid { background: var(--ink); color: var(--bg); }
 .btn.accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-text); text-decoration: underline; cursor: pointer; min-height: 44px; }
+.linkbtn { display: inline-flex; align-items: center; background: none; border: 0; padding: 0; font: inherit; color: var(--accent-text); text-decoration: underline; cursor: pointer; min-height: 44px; }
 label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
 input[type="text"], input[type="email"], input[type="file"] {
   font: inherit; font-weight: 400; font-size: 16px; color: var(--ink); background: var(--paper);
@@ -79,7 +79,7 @@ input.code { font-family: var(--mono); font-size: 24px; letter-spacing: 0.3em; t
 .page-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 28px; }
 .page-head h1 { font-size: clamp(32px, 4.5vw, 44px); font-weight: 800; margin-top: 8px; }
 .panel { border: 1px solid var(--line); background: var(--surface); padding: 24px; }
-.split { display: flex; flex-wrap: wrap; gap: 36px; }
+.split { display: flex; flex-wrap: wrap; gap: 36px; align-items: flex-start; }
 .split > .main { flex: 999 1 480px; min-width: 0; }
 .split > .side { flex: 1 1 300px; min-width: 0; }
 .empty { border: 1px dashed var(--line); padding: 32px; background: var(--paper); }
@@ -94,3 +94,30 @@ input.code { font-family: var(--mono); font-size: 24px; letter-spacing: 0.3em; t
 .preview-body { padding: 16px; display: grid; gap: 10px; }
 .preview-foot { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Tables: scroll sideways in a box on narrow screens rather than squashing */
+.table-box { overflow-x: auto; border: 1px solid var(--line); background: var(--paper); }
+.table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 15px; }
+.table th { text-align: left; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--bg); }
+.table td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table tr:last-child td { border-bottom: 0; }
+.mono { font-family: var(--mono); font-size: 13px; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--ink); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.badge.solid { background: var(--ink); color: var(--bg); }
+.badge.kind-assumption, .badge.kind-exclusion { border-style: dashed; }
+.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 28px; font-weight: 500; flex-wrap: wrap; }
+.tabs a { text-decoration: none; padding: 10px 0; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs a[aria-current="page"] { border-bottom-color: var(--accent); }
+.section-title { font-family: var(--display); font-size: 20px; font-weight: 700; margin: 28px 0 10px; }
+details.panel > summary { cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 20px; list-style: none; }
+details.panel > summary::-webkit-details-marker { display: none; }
+details.panel > summary::after { content: " +"; color: var(--accent-text); }
+details.panel[open] > summary::after { content: " −"; }
+details.panel[open] > summary { margin-bottom: 16px; }
+textarea, select { font: inherit; font-weight: 400; font-size: 16px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; width: 100%; }
+textarea { min-height: 96px; resize: vertical; }
+select { min-height: 46px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.stat-row { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; }
+.change-added { border-left: 0; }
+.diff-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }

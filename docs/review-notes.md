@@ -17,8 +17,17 @@ Next.js renders redirects from form actions through an internal hop that moves t
 app listens on 127.0.0.1 and is reachable solely through the web server in front of it, which must set
 `X-Forwarded-Host` itself and not pass through a client-supplied value.
 
+## Scope and baselines (slice 2)
+
+- Every scope row carries `tenant_id`, and composite foreign keys stop a row pointing at another tenant's project.
+- Published baselines, their items and item revisions are protected by database triggers: content can't be
+  updated or deleted; only a baseline's review status may change.
+- Each baseline stores a SHA-256 fingerprint of its content; the version page recomputes it on every view.
+
 ## Known gaps to close before a real client uses it
 
+- Spreadsheet import reads uploaded .xlsx files with ExcelJS, capped at 5 MB and 1,000 rows. A reviewer
+  should check decompression limits (very compressed .xlsx files) and run imports in a background job.
 - Request timing differs slightly between member and non-member addresses on "Email me a code"
   (only members trigger database writes and an email). Consider sending in a background job.
 - Rate limiting is per tenant + email only; add a per-IP limit at the web server or in the app.
