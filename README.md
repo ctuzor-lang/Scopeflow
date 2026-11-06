@@ -6,7 +6,32 @@ ScopeFlow keeps a shared, versioned record of what a supplier and its client agr
 
 ## Status
 
-Pre-build. Pilot slice in planning.
+Slice 1 built: email-code sign-in, tenant-aware workspace, white-label branding settings, audit trail. Not yet deployed.
+
+## Running it locally
+
+Needs Node.js 20+ and PostgreSQL 16.
+
+```bash
+npm install
+cp .env.example .env            # then set DATABASE_URL and SECRET_KEY
+echo "DEV_TENANT_SLUG=chayse" > .env.development   # dev only: lets localhost open the Chayse workspace
+npm run db:migrate
+npm run tenant:create -- --slug chayse --name "Chayse Consulting" \
+  --admin-email you@chayse.com --hostname app.chayse.com --verified
+npm run dev                     # http://localhost:3000 ; sign-in codes print in the terminal
+npm test                        # needs a scopeflow_test database (see tests/setup.ts)
+```
+
+## Deploying (one.com cloud server)
+
+1. Install Node.js 20+ and PostgreSQL 16; create a database and user.
+2. Set the environment variables from `.env.example` (production values, `MAIL_TRANSPORT=smtp`, no `DEV_TENANT_SLUG`).
+3. `npm ci && npm run build && npm run db:migrate`
+4. Run `node .next/standalone/server.js` with `PORT` set, bound to 127.0.0.1, under a process manager. Copy `.next/static` to `.next/standalone/.next/static` first.
+5. Point app.chayse.com at the server; the web server proxies to the app and sets `X-Forwarded-Host`.
+
+See `docs/review-notes.md` before any real client uses it.
 
 ## Agreed decisions (6 Nov 2026)
 

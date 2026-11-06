@@ -1,0 +1,29 @@
+# Notes for the independent security review
+
+Things a reviewer should look at closely, and known gaps deliberately left for later slices.
+
+## How tenants are kept apart
+
+- The tenant is resolved from the request address (`src/lib/tenant.ts`). Only verified hostnames count.
+- Sessions are stored per tenant and only accepted on the tenant that issued them (`userForSession`).
+- Sign-in codes are keyed to tenant + email, so a code issued on one tenant's address fails on another.
+- Session cookies are host-only (no `Domain` attribute), HttpOnly, SameSite=Lax, and Secure in production.
+- Tests: `tests/auth.test.ts` ("tenant isolation").
+
+## Proxy trust
+
+Next.js renders redirects from form actions through an internal hop that moves the real address into
+`X-Forwarded-Host`. The app therefore reads that header (`TRUST_PROXY=true`). This is only safe if the
+app listens on 127.0.0.1 and is reachable solely through the web server in front of it, which must set
+`X-Forwarded-Host` itself and not pass through a client-supplied value.
+
+## Known gaps to close before a real client uses it
+
+- Request timing differs slightly between member and non-member addresses on "Email me a code"
+  (only members trigger database writes and an email). Consider sending in a background job.
+- Rate limiting is per tenant + email only; add a per-IP limit at the web server or in the app.
+- No Content-Security-Policy header yet (Next.js inline scripts need a nonce setup).
+- Customer domain verification by DNS (FR-029) is modelled but not built; the operator script marks
+  domains verified, so it must only be used for domains the operator controls.
+- Logos are stored on local disk; move to S3-compatible storage before running more than one server.
+- Audit chain verification exists (`verifyAuditChain`) but nothing runs it on a schedule yet.

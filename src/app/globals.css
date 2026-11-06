@@ -1,0 +1,96 @@
+/* Base theme = Chayse. Tenants override --accent only (UX-002 §7.1); status colours stay fixed. */
+:root {
+  --bg: #eef1f6;
+  --surface: #e1e7f0;
+  --paper: #ffffff;
+  --ink: #0e1a2b;
+  --muted: #4f5d73;
+  --line: #c8d1de;
+  --accent: #1b68ea;
+  --on-accent: #ffffff;
+  --accent-text: #1356cc;
+  --success: #277a5b;
+  --amber: #b66b1f;
+  --danger: #b83d42;
+  --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 2px;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.08; letter-spacing: -0.02em; text-wrap: balance; }
+
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.wrap { max-width: 1120px; margin-inline: auto; padding-inline: 20px; }
+
+/* Header */
+.topbar { border-bottom: 1px solid var(--line); }
+.topbar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; text-decoration: none; min-height: 44px; }
+.brand-mark { width: 32px; height: 32px; border-radius: 6px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-family: var(--display); font-weight: 800; flex: none; }
+.brand img { height: 32px; width: auto; max-width: 160px; object-fit: contain; display: block; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-name { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+.brand-sub { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.nav { display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 14px; font-weight: 500; align-items: center; }
+.nav a { text-decoration: none; padding-block: 8px; border-bottom: 2px solid transparent; }
+.nav a[aria-current="page"], .nav a:hover { border-bottom-color: var(--accent); }
+.who { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+
+/* Buttons and forms */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 20px; font: inherit; font-weight: 600; font-size: 15px; border-radius: var(--radius); border: 1px solid var(--ink); background: transparent; color: var(--ink); text-decoration: none; cursor: pointer; }
+.btn.solid { background: var(--ink); color: var(--bg); }
+.btn.accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-text); text-decoration: underline; cursor: pointer; min-height: 44px; }
+label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+input[type="text"], input[type="email"], input[type="file"] {
+  font: inherit; font-weight: 400; font-size: 16px; color: var(--ink); background: var(--paper);
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; min-height: 46px; width: 100%;
+}
+input.code { font-family: var(--mono); font-size: 24px; letter-spacing: 0.3em; text-align: center; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: 15px; }
+.check input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent); flex: none; }
+.hint { font-weight: 400; font-size: 13px; color: var(--muted); }
+.stack { display: grid; gap: 18px; }
+
+/* Messages: label + colour, never colour alone */
+.note { padding: 12px 14px; border: 1px solid var(--line); background: var(--paper); font-size: 15px; }
+.note.error { border-color: var(--danger); }
+.note.error::before { content: "Problem: "; font-weight: 700; color: var(--danger); }
+.note.ok { border-color: var(--success); }
+.note.ok::before { content: "Done: "; font-weight: 700; color: var(--success); }
+
+/* Layout pieces */
+.page { padding-block: 36px 64px; }
+.page-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 28px; }
+.page-head h1 { font-size: clamp(32px, 4.5vw, 44px); font-weight: 800; margin-top: 8px; }
+.panel { border: 1px solid var(--line); background: var(--surface); padding: 24px; }
+.split { display: flex; flex-wrap: wrap; gap: 36px; }
+.split > .main { flex: 999 1 480px; min-width: 0; }
+.split > .side { flex: 1 1 300px; min-width: 0; }
+.empty { border: 1px dashed var(--line); padding: 32px; background: var(--paper); }
+.card-narrow { width: calc(100% - 32px); max-width: 440px; margin: 56px auto; background: var(--paper); border: 1px solid var(--line); padding: 32px; }
+@media (max-width: 480px) { .card-narrow { padding: 24px; margin-top: 24px; } }
+.footer { border-top: 1px solid var(--line); padding-block: 18px; font-size: 13px; color: var(--muted); }
+.footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.swatch-row { display: flex; gap: 10px; align-items: center; }
+.swatch-row input[type="color"] { width: 52px; height: 46px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: 2px; }
+.preview { background: var(--paper); border: 1px solid var(--line); max-width: 380px; }
+.preview-head { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.preview-body { padding: 16px; display: grid; gap: 10px; }
+.preview-foot { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
