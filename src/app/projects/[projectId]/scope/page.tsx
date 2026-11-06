@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/ActionForm";
 import { Disclosure } from "@/components/Disclosure";
 import { ItemFields, kindLabel } from "@/components/ItemFields";
-import { diffSize, draftChanges } from "@/lib/baselines";
+import { changesAwaitingIncorporation, diffSize, draftChanges } from "@/lib/baselines";
+import { crRef } from "@/lib/changes";
 import { canPublish, getProject } from "@/lib/projects";
 import { currentTenant, requireUser } from "@/lib/request";
 import { draftItems, type DraftItem } from "@/lib/scope";
@@ -24,7 +25,11 @@ export default async function ScopePage({ params }: { params: Promise<{ projectI
   const user = await requireUser();
   const project = await getProject(tenant.id, projectId);
   if (!project) notFound();
-  const [items, changes] = await Promise.all([draftItems(tenant.id, projectId), draftChanges(tenant.id, projectId)]);
+  const [items, changes, approved] = await Promise.all([
+    draftItems(tenant.id, projectId),
+    draftChanges(tenant.id, projectId),
+    changesAwaitingIncorporation(tenant.id, projectId),
+  ]);
   const pending = diffSize(changes.diff);
   const nextVersion = (changes.latest?.version ?? 0) + 1;
 
@@ -118,6 +123,20 @@ export default async function ScopePage({ params }: { params: Promise<{ projectI
               version. Client sign-off arrives in a later build slice.
             </p>
             <ActionForm action={publishAction.bind(null, projectId)} submitLabel={`Publish version ${nextVersion}`} pendingLabel="Publishing…" buttonClass="btn accent">
+              {approved.length ? (
+                <fieldset>
+                  <legend>Approved changes this version puts into effect</legend>
+                  {approved.map((c) => (
+                    <label key={c.number} className="check">
+                      <input type="checkbox" name="includes" value={c.number} defaultChecked />
+                      <span>
+                        <span className="mono">{crRef(c.number)}</span> {c.title}
+                      </span>
+                    </label>
+                  ))}
+                  <span className="hint">Untick any change the draft doesn&apos;t reflect yet.</span>
+                </fieldset>
+              ) : null}
               <label className="check">
                 <input type="checkbox" name="confirm" />
                 <span>

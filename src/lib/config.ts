@@ -21,6 +21,10 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   STORAGE_DIR: z.string().default("./storage"),
+  // AI suggestions (slice 6). Without a key the feature is unavailable everywhere.
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default("claude-sonnet-5-5"),
+  ANTHROPIC_VERSION: z.string().default("2026-10-21"),
 });
 
 export type Config = z.infer<typeof schema>;

@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/ActionForm";
 import { AssessmentView as Assessment } from "@/components/AssessmentView";
+import { AiPanel } from "@/components/AiPanel";
 import { DecisionRecord } from "@/components/DecisionRecord";
+import { aiEnabledForTenant, listSuggestions } from "@/lib/ai";
 import { Disclosure } from "@/components/Disclosure";
 import { Thread } from "@/components/Thread";
 import { getDecision, listComments } from "@/lib/decisions";
-import { baselineItems } from "@/lib/baselines";
+import { baselineItems, versionIncludingChange } from "@/lib/baselines";
 import {
   STATUS_LABEL,
   assessmentProblems,
@@ -45,6 +47,8 @@ export default async function ChangePage({ params }: { params: Promise<{ project
     getDecision(cr.id),
     listComments(cr.id),
   ]);
+  const [aiOn, suggestions] = await Promise.all([aiEnabledForTenant(tenant.id), listSuggestions(cr.id)]);
+  const inVersion = cr.status === "incorporated" ? await versionIncludingChange(cr.id) : null;
   const open = ["submitted", "assessing", "awaiting_client"].includes(cr.status);
   const problems = assessmentProblems(draft);
   const latest = revisions[0];
@@ -80,6 +84,25 @@ export default async function ChangePage({ params }: { params: Promise<{ project
       <div className="split">
         <section className="main stack" style={{ gap: 28 }}>
           {decision ? <DecisionRecord d={decision} /> : null}
+          {decision ? (
+            <p className="note" style={{ margin: 0 }}>
+              <a href={`/projects/${projectId}/changes/${n}/note.pdf`}>Download the change control note (PDF)</a>
+            </p>
+          ) : null}
+          {cr.status === "approved" ? (
+            <div className="panel stack">
+              <h3 style={{ fontSize: 20, fontWeight: 700 }}>Next: put it into the agreed scope</h3>
+              <p style={{ margin: 0 }}>
+                Update the <Link href={`/projects/${projectId}/scope`}>scope draft</Link> to reflect this change, then publish
+                a new version and tick {cr.ref} as included.
+              </p>
+            </div>
+          ) : null}
+          {inVersion ? (
+            <p className="note ok" style={{ margin: 0 }}>
+              Put into effect in <Link href={`/projects/${projectId}/versions/${inVersion}`}>version {inVersion}</Link>.
+            </p>
+          ) : null}
           <div className="stack" style={{ gap: 10 }}>
             <div className="eyebrow">What the client asked for</div>
             <blockquote className="quote">{cr.requestText}</blockquote>
@@ -89,6 +112,8 @@ export default async function ChangePage({ params }: { params: Promise<{ project
               {cr.wantedBy ? ` · wanted by ${fmtDay(cr.wantedBy)}` : ""}
             </p>
           </div>
+
+          {open && aiOn ? <AiPanel projectId={projectId} number={n} suggestions={suggestions} /> : null}
 
           {open ? (
             <div className="panel">

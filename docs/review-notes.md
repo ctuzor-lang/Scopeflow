@@ -31,6 +31,17 @@ app listens on 127.0.0.1 and is reachable solely through the web server in front
 - Decisions and comments are append-only at database level; one decision per change request.
 - Emails never contain prices or message text (FR-017); they link to the signed-in page.
 
+## AI suggestions (slice 6)
+
+- Off unless `ANTHROPIC_API_KEY` is set on the server **and** a workspace admin turns it on.
+- Sends only the change request title/text and the agreed items of the version it was raised against.
+  No prices, client organisation, names or email addresses (tested).
+- Request text is fenced with random markers and the model is told to treat it as data. Output is
+  schema-validated; unknown item references are dropped; nothing is applied without a person accepting it.
+- Every run records model, prompt version and an input fingerprint (not the content).
+- **Contract point:** Anthropic becomes a subprocessor for workspaces that turn this on. Add it to the
+  subprocessor list and check client contracts before enabling it for a client's project.
+
 ## Known gaps to close before a real client uses it
 
 - **Approval wording** (`authorityStatement` in `src/lib/decisions.ts`) is a draft. A lawyer must review it.

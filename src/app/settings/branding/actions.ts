@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { setAiEnabled } from "@/lib/ai";
 import { saveBranding, saveLogo } from "@/lib/branding";
 import { agencyUser, clientIp, currentTenant } from "@/lib/request";
 
@@ -46,4 +47,11 @@ export async function uploadLogoAction(_prev: FormState, formData: FormData): Pr
   if (!result.ok) return { status: "error", message: result.error };
   revalidatePath("/", "layout");
   return { status: "ok", message: "Logo uploaded." };
+}
+
+export async function toggleAiAction(enable: boolean) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  await setAiEnabled(ctx.tenant.id, ctx.user.userId, enable);
+  revalidatePath("/settings/branding");
 }

@@ -31,7 +31,7 @@ export function AppShell({
             </Link>
             {user.role === "admin" ? (
               <Link href="/settings/branding" aria-current={current === "branding" ? "page" : undefined}>
-                Branding
+                Settings
               </Link>
             ) : null}
           </nav>

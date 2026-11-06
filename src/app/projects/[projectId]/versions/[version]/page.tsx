@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { kindLabel } from "@/components/ItemFields";
-import { baselineItems, diffItems, getBaseline, verifyBaseline, type ItemPayload } from "@/lib/baselines";
+import { baselineItems, changesInBaseline, diffItems, getBaseline, verifyBaseline, type ItemPayload } from "@/lib/baselines";
+import { crRef } from "@/lib/changes";
 import { currentTenant } from "@/lib/request";
 
 const fmt = (d: Date) =>
@@ -81,10 +82,11 @@ export default async function VersionPage({ params }: { params: Promise<{ projec
   const n = Number(version);
   const baseline = await getBaseline(tenant.id, projectId, n);
   if (!baseline) notFound();
-  const [items, intact, previous] = await Promise.all([
+  const [items, intact, previous, includes] = await Promise.all([
     baselineItems(baseline.id),
     verifyBaseline(tenant.id, projectId, n),
     n > 1 ? getBaseline(tenant.id, projectId, n - 1) : Promise.resolve(null),
+    getBaseline(tenant.id, projectId, n).then((b) => (b ? changesInBaseline(b.id) : [])),
   ]);
   const diff = previous ? diffItems(await baselineItems(previous.id), items) : null;
 
@@ -98,6 +100,19 @@ export default async function VersionPage({ params }: { params: Promise<{ projec
         <p className="muted" style={{ margin: "6px 0 0" }}>
           Published {fmt(baseline.publishedAt)} by {baseline.publishedBy ?? "unknown"} · {baseline.itemCount} items
         </p>
+        {includes.length ? (
+          <p style={{ margin: "10px 0 0" }}>
+            <span className="diff-label muted">Puts into effect </span>
+            {includes.map((c, i) => (
+              <span key={c.number}>
+                {i ? ", " : ""}
+                <Link href={`/projects/${projectId}/changes/${c.number}`}>
+                  {crRef(c.number)} {c.title}
+                </Link>
+              </span>
+            ))}
+          </p>
+        ) : null}
 
         {diff ? (
           <>

@@ -112,7 +112,8 @@ export async function publishAction(projectId: string, _prev: FormState, formDat
   if (formData.get("confirm") !== "on") {
     return { status: "error", message: "Tick the box to confirm the draft is ready to publish." };
   }
-  const r = await publishBaseline({ tenantId: ctx.tenant.id, projectId, actorUserId: ctx.user.userId });
+  const includesChanges = formData.getAll("includes").map(Number).filter((n) => Number.isInteger(n) && n > 0);
+  const r = await publishBaseline({ tenantId: ctx.tenant.id, projectId, actorUserId: ctx.user.userId, includesChanges });
   if (!r.ok) return { status: "error", message: r.error };
   revalidatePath(`/projects/${projectId}`, "layout");
   redirect(`/projects/${projectId}/versions/${r.version}`);

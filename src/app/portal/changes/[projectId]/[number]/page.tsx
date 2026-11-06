@@ -10,6 +10,7 @@ import { CLIENT_STATUS_LABEL, getChangeRequest, listRevisions } from "@/lib/chan
 import { clientRole } from "@/lib/clients";
 import { authorityStatement, getDecision, listComments } from "@/lib/decisions";
 import { getProject } from "@/lib/projects";
+import { versionIncludingChange } from "@/lib/baselines";
 import { currentTenant, requireClient } from "@/lib/request";
 import { clientCommentAction, decideAction } from "../../../actions";
 
@@ -56,6 +57,12 @@ export default async function ClientChangePage({ params }: { params: Promise<{ p
         </div>
 
         {decision ? <DecisionRecord d={decision} /> : null}
+        {decision ? (
+          <p className="note" style={{ margin: 0 }}>
+            <a href={`/portal/changes/${projectId}/${n}/note.pdf`}>Download the change control note (PDF)</a>
+            {cr.status === "incorporated" ? ` · now part of agreed version ${await versionIncludingChange(cr.id)}` : ""}
+          </p>
+        ) : null}
 
         {canDecide ? (
           <div className="panel stack">

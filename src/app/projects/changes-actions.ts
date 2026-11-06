@@ -6,6 +6,7 @@ import type { FormState } from "@/components/ActionForm";
 import { getChangeRequest, publishAssessment, raiseChangeRequest, saveImpactDraft, withdrawChange } from "@/lib/changes";
 import { inviteClient, revokeClient } from "@/lib/clients";
 import { addComment, notifyDecisionNeeded } from "@/lib/decisions";
+import { acceptSuggestion, dismissSuggestion, suggestImpacts } from "@/lib/ai";
 import { canPublish, getProject } from "@/lib/projects";
 import { agencyUser, currentTenant } from "@/lib/request";
 
@@ -117,4 +118,27 @@ export async function revokeClientAction(projectId: string, accessId: string) {
   if (!ctx || !canPublish(ctx.user.role)) return;
   await revokeClient({ tenantId: ctx.tenant.id, projectId, accessId, actorUserId: ctx.user.userId });
   revalidatePath(`/projects/${projectId}/clients`);
+}
+
+export async function suggestAction(projectId: string, number: number, _prev: FormState, _f: FormData): Promise<FormState> {
+  const ctx = await context(projectId);
+  if (!ctx) return denied;
+  const r = await suggestImpacts({ tenant: ctx.tenant, projectId, number, actorUserId: ctx.user.userId });
+  revalidatePath(`/projects/${projectId}/changes/${number}`);
+  if (!r.ok) return { status: "error", message: r.error };
+  return { status: "ok", message: `${r.count} suggestions below. Accept the ones you agree with.` };
+}
+
+export async function acceptSuggestionAction(projectId: string, number: number, suggestionId: string) {
+  const ctx = await context(projectId);
+  if (!ctx) return;
+  await acceptSuggestion({ tenant: ctx.tenant, projectId, number, suggestionId, actorUserId: ctx.user.userId });
+  revalidatePath(`/projects/${projectId}/changes/${number}`);
+}
+
+export async function dismissSuggestionAction(projectId: string, number: number, suggestionId: string) {
+  const ctx = await context(projectId);
+  if (!ctx) return;
+  await dismissSuggestion({ tenant: ctx.tenant, projectId, number, suggestionId, actorUserId: ctx.user.userId });
+  revalidatePath(`/projects/${projectId}/changes/${number}`);
 }
