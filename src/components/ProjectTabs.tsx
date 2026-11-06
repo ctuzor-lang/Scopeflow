@@ -9,6 +9,7 @@ export function ProjectTabs({ projectId, versionCount, changeCount }: { projectI
     { href: `/projects/${projectId}/scope`, label: "Scope draft" },
     { href: `/projects/${projectId}/versions`, label: `Agreed versions (${versionCount})` },
     { href: `/projects/${projectId}/changes`, label: `Changes (${changeCount})` },
+    { href: `/projects/${projectId}/clients`, label: "Client access" },
   ];
   return (
     <nav className="tabs" aria-label="Project">

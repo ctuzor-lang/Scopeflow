@@ -24,7 +24,19 @@ app listens on 127.0.0.1 and is reachable solely through the web server in front
   updated or deleted; only a baseline's review status may change.
 - Each baseline stores a SHA-256 fingerprint of its content; the version page recomputes it on every view.
 
+## Client decisions (slice 4)
+
+- Client people have per-project access only; every agency page and server action rejects a client session.
+- A decision binds to one published revision (id + fingerprint). If a newer revision exists, it is refused.
+- Decisions and comments are append-only at database level; one decision per change request.
+- Emails never contain prices or message text (FR-017); they link to the signed-in page.
+
 ## Known gaps to close before a real client uses it
+
+- **Approval wording** (`authorityStatement` in `src/lib/decisions.ts`) is a draft. A lawyer must review it.
+- Client access doesn't expire on its own (FRS-001 FR-003 asks for expiring invitations); it lasts until removed.
+- Incorporating an approved change into the next scope version is manual for now (edit the draft, publish);
+  the link from change to new version (FR-016) comes in a later slice.
 
 - Spreadsheet import reads uploaded .xlsx files with ExcelJS, capped at 5 MB and 1,000 rows. A reviewer
   should check decompression limits (very compressed .xlsx files) and run imports in a background job.

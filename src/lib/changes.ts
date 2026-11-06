@@ -18,6 +18,13 @@ export const STATUS_LABEL: Record<CrStatus, string> = {
   withdrawn: "Withdrawn",
 };
 
+/** The same states in the client's own words. */
+export const CLIENT_STATUS_LABEL: Record<CrStatus, string> = {
+  ...STATUS_LABEL,
+  awaiting_client: "Awaiting your decision",
+  rejected: "Declined",
+};
+
 /** States in which the agency can still work on the assessment. */
 const OPEN: CrStatus[] = ["submitted", "assessing", "awaiting_client"];
 

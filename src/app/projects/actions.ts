@@ -6,12 +6,12 @@ import type { FormState } from "@/components/ActionForm";
 import { publishBaseline } from "@/lib/baselines";
 import { parseScopeFile } from "@/lib/importer";
 import { canManageProjects, canPublish, createProject, getProject } from "@/lib/projects";
-import { currentTenant, currentUser } from "@/lib/request";
+import { agencyUser, currentTenant } from "@/lib/request";
 import { importRows, removeItem, saveItem } from "@/lib/scope";
 
 async function context(projectId?: string) {
   const tenant = await currentTenant();
-  const user = await currentUser();
+  const user = await agencyUser();
   if (!user) return null;
   if (!projectId) return { tenant, user, project: null };
   const project = await getProject(tenant.id, projectId);

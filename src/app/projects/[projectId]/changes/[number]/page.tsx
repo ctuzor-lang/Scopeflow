@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/ActionForm";
+import { AssessmentView as Assessment } from "@/components/AssessmentView";
+import { DecisionRecord } from "@/components/DecisionRecord";
 import { Disclosure } from "@/components/Disclosure";
+import { Thread } from "@/components/Thread";
+import { getDecision, listComments } from "@/lib/decisions";
 import { baselineItems } from "@/lib/baselines";
 import {
   STATUS_LABEL,
@@ -10,74 +14,19 @@ import {
   getChangeRequest,
   getImpactDraft,
   listRevisions,
-  type AssessmentPayload,
 } from "@/lib/changes";
 import { canPublish, getProject } from "@/lib/projects";
 import { currentTenant, requireUser } from "@/lib/request";
-import { publishAssessmentAction, saveAssessmentAction, withdrawAction } from "../../../changes-actions";
+import { agencyCommentAction, publishAssessmentAction, saveAssessmentAction, withdrawAction } from "../../../changes-actions";
 
 const fmt = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(d);
 const fmtDay = (iso: string) => new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(iso));
 const SOURCE: Record<string, string> = { email: "email", meeting: "meeting", call: "call", document: "document", other: "other" };
-const BASIS: Record<string, string> = { fixed: "Fixed price", estimate: "Estimate", no_charge: "No charge" };
+
 
 function moneyInput(minor: number | null) {
   if (minor === null) return "";
   return (minor / 100).toLocaleString("en-GB", { minimumFractionDigits: minor % 100 ? 2 : 0 });
-}
-
-/** The published assessment, as the client will see it. */
-function Assessment({ p, revNo }: { p: AssessmentPayload; revNo: number }) {
-  const days = (n: number) => `${n > 0 ? "+" : ""}${n} working day${Math.abs(n) === 1 ? "" : "s"}`;
-  return (
-    <div className="stack">
-      <div className="figures">
-        <div>
-          <div className="eyebrow">{BASIS[p.price.basis]}</div>
-          <div className="num">{p.price.basis === "no_charge" ? "£0" : formatMoney(p.price.amountMinor, p.price.currency)}</div>
-        </div>
-        <div>
-          <div className="eyebrow">Effort</div>
-          <div className="num">
-            {p.effort.minDays}–{p.effort.maxDays} days
-          </div>
-        </div>
-        <div>
-          <div className="eyebrow">Schedule</div>
-          <div className="num">{p.scheduleDays === 0 ? "No change" : days(p.scheduleDays)}</div>
-        </div>
-      </div>
-      <div>
-        <div className="eyebrow" style={{ marginBottom: 6 }}>What changes</div>
-        <p style={{ margin: 0, whiteSpace: "pre-line" }}>{p.scopeChange}</p>
-      </div>
-      {p.affectedItems.length ? (
-        <div>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Agreed items affected (version {p.sourceVersion})</div>
-          <ul style={{ margin: 0, paddingLeft: 20 }}>
-            {p.affectedItems.map((i) => (
-              <li key={i.key}>
-                <span className="mono">{i.key}</span> {i.title}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {p.assumptions ? (
-        <div>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Assumptions</div>
-          <p style={{ margin: 0, whiteSpace: "pre-line" }}>{p.assumptions}</p>
-        </div>
-      ) : null}
-      {p.risks ? (
-        <div>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Risks</div>
-          <p style={{ margin: 0, whiteSpace: "pre-line" }}>{p.risks}</p>
-        </div>
-      ) : null}
-      <p className="hint" style={{ margin: 0 }}>Assessment R{revNo}. The client&apos;s decision will apply to this exact revision only.</p>
-    </div>
-  );
 }
 
 export default async function ChangePage({ params }: { params: Promise<{ projectId: string; number: string }> }) {
@@ -89,7 +38,13 @@ export default async function ChangePage({ params }: { params: Promise<{ project
   const cr = project ? await getChangeRequest(tenant.id, projectId, n) : null;
   if (!project || !cr) notFound();
 
-  const [draft, revisions, items] = await Promise.all([getImpactDraft(cr.id), listRevisions(cr.id), baselineItems(cr.sourceBaselineId)]);
+  const [draft, revisions, items, decision, comments] = await Promise.all([
+    getImpactDraft(cr.id),
+    listRevisions(cr.id),
+    baselineItems(cr.sourceBaselineId),
+    getDecision(cr.id),
+    listComments(cr.id),
+  ]);
   const open = ["submitted", "assessing", "awaiting_client"].includes(cr.status);
   const problems = assessmentProblems(draft);
   const latest = revisions[0];
@@ -124,6 +79,7 @@ export default async function ChangePage({ params }: { params: Promise<{ project
 
       <div className="split">
         <section className="main stack" style={{ gap: 28 }}>
+          {decision ? <DecisionRecord d={decision} /> : null}
           <div className="stack" style={{ gap: 10 }}>
             <div className="eyebrow">What the client asked for</div>
             <blockquote className="quote">{cr.requestText}</blockquote>
@@ -201,6 +157,19 @@ export default async function ChangePage({ params }: { params: Promise<{ project
                 <Assessment p={latest.payload} revNo={latest.revNo} />
               </div>
             </div>
+          ) : null}
+
+          {latest ? (
+            <section className="stack">
+              <h3 style={{ fontSize: 22, fontWeight: 700 }}>Questions from the client</h3>
+              <Thread comments={comments} agencyName={tenant.branding.displayName} />
+              <ActionForm action={agencyCommentAction.bind(null, projectId, n)} submitLabel="Send reply" pendingLabel="Sending…" resetOnSuccess>
+                <label>
+                  Reply to the client
+                  <textarea name="body" required maxLength={5000} />
+                </label>
+              </ActionForm>
+            </section>
           ) : null}
         </section>
 

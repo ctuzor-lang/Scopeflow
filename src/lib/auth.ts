@@ -13,7 +13,19 @@ export const SESSION_DAYS = 7;
 export const SESSION_COOKIE = "sf_session";
 
 export type Role = "admin" | "pm" | "contributor";
-export type CurrentUser = { userId: string; email: string; displayName: string | null; role: Role; sessionId: string };
+/**
+ * Agency people are members of the tenant. Client people only have access to
+ * specific projects; they never see the agency workspace.
+ */
+export type CurrentUser =
+  | { kind: "agency"; userId: string; email: string; displayName: string | null; role: Role; sessionId: string }
+  | { kind: "client"; userId: string; email: string; displayName: string | null; role: "client"; sessionId: string };
+
+/** A user may sign in to a tenant if they're an active member, or have active access to one of its live projects. */
+const CAN_SIGN_IN = `
+  (exists (select 1 from membership m where m.user_id = u.id and m.tenant_id = $1 and m.status = 'active')
+   or exists (select 1 from project_access a join project p on p.id = a.project_id
+              where a.user_id = u.id and a.tenant_id = $1 and a.status = 'active' and p.status = 'active'))`;
 
 export const normaliseEmail = (email: string) => email.trim().toLowerCase();
 
@@ -32,8 +44,7 @@ export async function requestSignInCode(tenant: Tenant, rawEmail: string, ip: st
   if (!looksLikeEmail(email)) return;
 
   const member = await one<{ user_id: string }>(
-    `select m.user_id from membership m join app_user u on u.id = m.user_id
-     where m.tenant_id = $1 and u.email = $2 and m.status = 'active'`,
+    `select u.id as user_id from app_user u where u.email = $2 and ${CAN_SIGN_IN}`,
     [tenant.id, email],
   );
   if (!member) return;
@@ -111,11 +122,10 @@ export async function verifySignInCode(
     await db.query("update login_code set consumed_at = now() where id = $1", [row.id]);
 
     const member = (
-      await db.query<{ user_id: string }>(
-        `select m.user_id from membership m join app_user u on u.id = m.user_id
-         where m.tenant_id = $1 and u.email = $2 and m.status = 'active'`,
-        [tenant.id, email],
-      )
+      await db.query<{ user_id: string }>(`select u.id as user_id from app_user u where u.email = $2 and ${CAN_SIGN_IN}`, [
+        tenant.id,
+        email,
+      ])
     ).rows[0];
     if (!member) return { ok: false } as const;
 
@@ -142,25 +152,21 @@ export async function verifySignInCode(
 /** The signed-in user for this tenant, or null. A session from another tenant never matches. */
 export async function userForSession(tenant: Tenant, token: string | undefined | null): Promise<CurrentUser | null> {
   if (!token) return null;
-  const row = await one<{ session_id: string; user_id: string; email: string; display_name: string | null; role: Role }>(
+  const row = await one<{ session_id: string; user_id: string; email: string; display_name: string | null; role: Role | null }>(
     `select s.id as session_id, u.id as user_id, u.email, u.display_name, m.role
      from session s
      join app_user u on u.id = s.user_id
-     join membership m on m.user_id = s.user_id and m.tenant_id = s.tenant_id and m.status = 'active'
-     where s.token_hash = $1 and s.tenant_id = $2 and s.revoked_at is null and s.expires_at > now()`,
-    [sha256(token), tenant.id],
+     left join membership m on m.user_id = s.user_id and m.tenant_id = s.tenant_id and m.status = 'active'
+     where s.token_hash = $2 and s.tenant_id = $1 and s.revoked_at is null and s.expires_at > now()
+       and ${CAN_SIGN_IN}`,
+    [tenant.id, sha256(token)],
   );
   if (!row) return null;
   await query("update session set last_seen_at = now() where id = $1 and last_seen_at < now() - interval '5 minutes'", [
     row.session_id,
   ]);
-  return {
-    userId: row.user_id,
-    email: row.email,
-    displayName: row.display_name,
-    role: row.role,
-    sessionId: row.session_id,
-  };
+  const base = { userId: row.user_id, email: row.email, displayName: row.display_name, sessionId: row.session_id };
+  return row.role ? { kind: "agency", role: row.role, ...base } : { kind: "client", role: "client", ...base };
 }
 
 export async function signOut(tenant: Tenant, user: CurrentUser, ip: string | null): Promise<void> {

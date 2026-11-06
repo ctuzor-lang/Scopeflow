@@ -19,9 +19,28 @@ export const currentUser = cache(async (): Promise<CurrentUser | null> => {
   return userForSession(tenant, token);
 });
 
-export async function requireUser(): Promise<CurrentUser> {
+export type AgencyUser = Extract<CurrentUser, { kind: "agency" }>;
+export type ClientUser = Extract<CurrentUser, { kind: "client" }>;
+
+/** For agency screens. Client people are sent to their portal. */
+export async function requireUser(): Promise<AgencyUser> {
   const user = await currentUser();
   if (!user) redirect("/login");
+  if (user.kind !== "agency") redirect("/portal");
+  return user;
+}
+
+/** For server actions on agency data: null unless an agency member is signed in. */
+export async function agencyUser(): Promise<AgencyUser | null> {
+  const user = await currentUser();
+  return user && user.kind === "agency" ? user : null;
+}
+
+/** For the client portal. Agency people are sent to their workspace. */
+export async function requireClient(): Promise<ClientUser> {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  if (user.kind !== "client") redirect("/");
   return user;
 }
 

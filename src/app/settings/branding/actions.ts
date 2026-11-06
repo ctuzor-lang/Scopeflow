@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { saveBranding, saveLogo } from "@/lib/branding";
-import { clientIp, currentTenant, currentUser } from "@/lib/request";
+import { agencyUser, clientIp, currentTenant } from "@/lib/request";
 
 export type FormState = { status: "idle" } | { status: "ok"; message: string } | { status: "error"; message: string };
 
 async function requireAdmin() {
   const tenant = await currentTenant();
-  const user = await currentUser();
+  const user = await agencyUser();
   if (!user || user.role !== "admin") return null;
   return { tenant, user };
 }
