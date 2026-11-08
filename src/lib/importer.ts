@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { Unzip, UnzipInflate, strFromU8 } from "fflate";
 
 /**
  * Reads an agreed scope from a spreadsheet (Excel .xlsx or .csv).
@@ -99,7 +100,56 @@ function cellText(value: ExcelJS.CellValue): string {
   return String(value);
 }
 
+const MAX_UNZIPPED_BYTES = 25 * 1024 * 1024;
+const MAX_IMPORT_COLUMNS = 50;
+
+class ImportTooLarge extends Error {}
+
+/**
+ * ExcelJS builds the whole workbook in memory, so a tiny file can expand into gigabytes
+ * (security review F2). Before handing it over, inflate everything with a hard byte limit
+ * and check the worksheets don't reach beyond the rows and columns we accept.
+ */
+function preflightXlsx(data: Buffer) {
+  let total = 0;
+  const sheetChunks: Uint8Array[] = [];
+  const unzip = new Unzip((file) => {
+    const isSheet = /^xl\/worksheets\/[^/]+\.xml$/.test(file.name);
+    file.ondata = (err, chunk) => {
+      if (err) throw err;
+      total += chunk.length;
+      if (total > MAX_UNZIPPED_BYTES) throw new ImportTooLarge();
+      if (isSheet) sheetChunks.push(chunk);
+    };
+    file.start();
+  });
+  unzip.register(UnzipInflate);
+  unzip.push(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), true);
+
+  const xml = strFromU8(concatChunks(sheetChunks));
+  const cells = xml.match(/<c[\s>]/g)?.length ?? 0;
+  if (cells > (MAX_IMPORT_ROWS + 1) * MAX_IMPORT_COLUMNS) throw new ImportTooLarge();
+  for (const m of xml.matchAll(/<c[^>]*\sr="([A-Z]{1,3})(\d+)"/g)) {
+    if (columnNumber(m[1]) > MAX_IMPORT_COLUMNS || Number(m[2]) > MAX_IMPORT_ROWS + 50) throw new ImportTooLarge();
+  }
+}
+
+function concatChunks(chunks: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let o = 0;
+  for (const c of chunks) {
+    out.set(c, o);
+    o += c.length;
+  }
+  return out;
+}
+
+function columnNumber(letters: string): number {
+  return [...letters].reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0);
+}
+
 async function readXlsx(data: Buffer): Promise<string[][]> {
+  preflightXlsx(data);
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(data as unknown as ArrayBuffer);
   const sheet = wb.worksheets[0];
@@ -107,7 +157,7 @@ async function readXlsx(data: Buffer): Promise<string[][]> {
   const rows: string[][] = [];
   sheet.eachRow({ includeEmpty: false }, (r) => {
     const cells: string[] = [];
-    for (let c = 1; c <= r.cellCount; c++) cells.push(cellText(r.getCell(c).value));
+    for (let c = 1; c <= Math.min(r.cellCount, MAX_IMPORT_COLUMNS); c++) cells.push(cellText(r.getCell(c).value));
     if (cells.some((x) => x.trim() !== "")) rows.push(cells);
   });
   return rows;
@@ -178,7 +228,10 @@ export async function parseScopeFile(fileName: string, data: Buffer): Promise<Pa
   try {
     if (isZip) return rowsToScope(await readXlsx(data));
     if (/\.csv$/i.test(fileName) || !isZip) return rowsToScope(parseCsv(data.toString("utf8")));
-  } catch {
+  } catch (err) {
+    if (err instanceof ImportTooLarge) {
+      return { ok: false, errors: [`That spreadsheet is too large. Import up to ${MAX_IMPORT_ROWS} rows and ${MAX_IMPORT_COLUMNS} columns from the first sheet.`] };
+    }
     return { ok: false, errors: ["That file couldn't be read. Save it as .xlsx or .csv and try again."] };
   }
   return { ok: false, errors: ["Upload an Excel (.xlsx) or CSV file."] };

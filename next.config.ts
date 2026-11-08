@@ -13,7 +13,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["pg", "pdfkit", "exceljs"],
   // The PDF uses the brand fonts from node_modules; make sure they ship with the standalone build.
-  outputFileTracingIncludes: { "/**/note.pdf": ["./node_modules/@fontsource/**/*.woff", "./assets/fonts/*", "./node_modules/pdfkit/js/data/**/*"] },
+  outputFileTracingIncludes: {
+    "/**/note.pdf": ["./node_modules/@fontsource/**/*.woff", "./assets/fonts/*", "./node_modules/pdfkit/js/**/*"],
+    // exceljs pulls in small packages whose "exports" entry (require.mjs) the tracer misses.
+    "/**/*": ["./node_modules/*/require.mjs"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

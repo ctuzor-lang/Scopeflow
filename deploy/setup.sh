@@ -71,7 +71,7 @@ id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --home "$BASE" --shell /us
 install -d -o root -g root -m 0755 "$BASE" "$BASE/releases"
 install -d -o "$APP_USER" -g "$APP_USER" -m 0750 "$DATA_DIR" "$DATA_DIR/storage" "$BASE/build"
 install -d -o root -g "$APP_USER" -m 0750 "$ENV_DIR"
-install -d -o postgres -g postgres -m 0750 "$BACKUP_DIR"
+install -d -o root -g root -m 0700 "$BACKUP_DIR"
 
 # ---------------------------------------------------------------- database
 say "Setting up the database"
@@ -114,24 +114,17 @@ fi
 # Older versions wrote MAIL_FROM unquoted; quote it so every reader agrees.
 sed -i 's/^MAIL_FROM=\([^"].*<.*>\)$/MAIL_FROM="\1"/' "$ENV_FILE"
 
-# ---------------------------------------------------------------- helper commands
-say "Installing helper commands"
-install -m 0755 "$REPO_DIR/deploy/env.sh" /usr/local/bin/scopeflow-env
-install -m 0755 "$REPO_DIR/deploy/update.sh" /usr/local/bin/scopeflow-update
-install -m 0755 "$REPO_DIR/deploy/set-mail.sh" /usr/local/bin/scopeflow-set-mail
-install -m 0755 "$REPO_DIR/deploy/set-ai-key.sh" /usr/local/bin/scopeflow-set-ai-key
-install -m 0755 "$REPO_DIR/deploy/enable-https.sh" /usr/local/bin/scopeflow-enable-https
-install -m 0755 "$REPO_DIR/deploy/backup.sh" /usr/local/bin/scopeflow-backup
-install -m 0644 "$REPO_DIR/deploy/scopeflow.service" /etc/systemd/system/scopeflow.service
-systemctl daemon-reload
-
-# ---------------------------------------------------------------- nginx
-say "Configuring the web server for $DOMAIN"
-sed "s/__DOMAIN__/$DOMAIN/g; s/__PORT__/$PORT/g" "$REPO_DIR/deploy/nginx.conf" > /etc/nginx/sites-available/scopeflow
+# ---------------------------------------------------------------- nginx site (first time only)
+if [ ! -f /etc/nginx/sites-available/scopeflow ]; then
+  say "Configuring the web server for $DOMAIN"
+  sed "s/__DOMAIN__/$DOMAIN/g; s/__PORT__/$PORT/g" "$REPO_DIR/deploy/nginx.conf" > /etc/nginx/sites-available/scopeflow
+fi
 ln -sf /etc/nginx/sites-available/scopeflow /etc/nginx/sites-enabled/scopeflow
 rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
+
+# ---------------------------------------------------------------- helpers, service, backups, hardening
+say "Installing helper commands and server settings"
+bash "$REPO_DIR/deploy/install-helpers.sh"
 
 # ---------------------------------------------------------------- build and start
 say "Building and starting ScopeFlow (takes a few minutes)"
@@ -148,13 +141,6 @@ if [ ! -f "$BASE/.tenant-created" ]; then
   )
   touch "$BASE/.tenant-created"
 fi
-
-# ---------------------------------------------------------------- backups
-say "Scheduling nightly backups"
-cat > /etc/cron.d/scopeflow-backup <<EOF
-# Nightly database and file backup at 02:30, kept for 14 days.
-30 2 * * * root /usr/local/bin/scopeflow-backup >> /var/log/scopeflow-backup.log 2>&1
-EOF
 
 # ---------------------------------------------------------------- HTTPS
 say "Checking whether $DOMAIN points at this server"

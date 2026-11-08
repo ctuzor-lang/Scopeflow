@@ -1,3 +1,4 @@
+import { sha256 } from "./crypto";
 import { recordAudit } from "./audit";
 import { crRef, formatMoney, type AssessmentPayload } from "./changes";
 import { tenantBaseUrl } from "./clients";
@@ -100,6 +101,8 @@ export async function decideChange(p: {
   revisionId: string;
   outcome: "approved" | "rejected";
   authorityConfirmed: boolean;
+  /** sha256 of the statement the approver was shown; approvals are refused if it differs from what would be stored (F8). */
+  shownStatementDigest?: string;
   comment: string | null;
   ip: string | null;
   userAgent: string | null;
@@ -140,6 +143,9 @@ export async function decideChange(p: {
     const ref = crRef(p.number);
     const statement =
       p.outcome === "approved" ? authorityStatement({ clientName: cr.client_name, agencyName: p.tenant.branding.displayName, projectName: cr.project_name, ref, revNo: latest.rev_no, digest: latest.content_digest, payload: latest.payload }) : null;
+    if (statement && p.shownStatementDigest !== undefined && p.shownStatementDigest !== sha256(statement)) {
+      return { ok: false, reason: "stale", message: "The approval wording has changed since you opened this page. Reload it and review the wording before approving." };
+    }
     await db.query(
       `insert into change_decision (tenant_id, change_request_id, impact_revision_id, rev_no, revision_digest, outcome,
                                     decided_by, authority_statement, comment, ip, user_agent)

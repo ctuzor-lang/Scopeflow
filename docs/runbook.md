@@ -10,8 +10,8 @@ Layout:
 | Running release | /opt/scopeflow/current → /opt/scopeflow/releases/<time>-<commit> |
 | Settings and secrets | /etc/scopeflow/scopeflow.env (root and the scopeflow service only) |
 | Uploaded files (logos, change notes) | /var/lib/scopeflow/storage |
-| Database | PostgreSQL, database `scopeflow`, local connections only |
-| Backups | /var/backups/scopeflow (nightly 02:30, kept 14 days) |
+| Database | PostgreSQL, database `scopeflow`, local connections only. Tables are owned by `scopeflow_owner`; the app's `scopeflow` account can only read and write rows, so it can't alter or empty the protected tables. Migrations run with `scopeflow-db-migrate`. |
+| Backups | /var/backups/scopeflow, root only (nightly 02:30, kept 14 days; log in /var/log/scopeflow-backup.log) |
 
 ## First-time setup (done once, from one.com's web console as root)
 
@@ -55,8 +55,9 @@ Rolling back the code does not undo database changes. Migrations only add things
 
 ```
 systemctl stop scopeflow
-sudo -u postgres pg_restore --clean --if-exists -d scopeflow /var/backups/scopeflow/scopeflow-<stamp>.dump
+sudo -u postgres pg_restore --clean --if-exists -d scopeflow < /var/backups/scopeflow/scopeflow-<stamp>.dump
 tar -xzf /var/backups/scopeflow/storage-<stamp>.tar.gz -C /var/lib/scopeflow
+scopeflow-db-migrate   # re-applies the database permissions
 chown -R scopeflow:scopeflow /var/lib/scopeflow/storage
 systemctl start scopeflow
 ```

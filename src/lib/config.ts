@@ -41,6 +41,10 @@ export function config(): Config {
     if (parsed.data.NODE_ENV === "production" && parsed.data.DEV_TENANT_SLUG) {
       throw new Error("DEV_TENANT_SLUG must not be set in production");
     }
+    if (parsed.data.NODE_ENV === "production" && parsed.data.MAIL_TRANSPORT === "console") {
+      // Allowed only for first-time setup: sign-in codes go to the server log until email is configured (F11).
+      console.warn("[mail] WARNING: email is not configured; sign-in codes are written to this log. Run scopeflow-set-mail.");
+    }
     cached = parsed.data;
   }
   return cached;

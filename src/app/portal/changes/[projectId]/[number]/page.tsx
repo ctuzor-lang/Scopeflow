@@ -11,6 +11,7 @@ import { clientRole } from "@/lib/clients";
 import { authorityStatement, getDecision, listComments } from "@/lib/decisions";
 import { getProject } from "@/lib/projects";
 import { versionIncludingChange } from "@/lib/baselines";
+import { sha256 } from "@/lib/crypto";
 import { currentTenant, requireClient } from "@/lib/request";
 import { clientCommentAction, decideAction } from "../../../actions";
 
@@ -73,6 +74,7 @@ export default async function ClientChangePage({ params }: { params: Promise<{ p
               pendingLabel="Recording…"
               buttonClass="btn accent"
             >
+              <input type="hidden" name="statement_digest" value={sha256(statement)} />
               <label className="check">
                 <input type="checkbox" name="authority" required />
                 <span>{statement}</span>

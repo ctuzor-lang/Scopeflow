@@ -37,6 +37,7 @@ export async function decideAction(
     revisionId,
     outcome,
     authorityConfirmed: f.get("authority") === "on",
+    shownStatementDigest: String(f.get("statement_digest") ?? ""),
     comment,
     ip: await clientIp(),
     userAgent: (await headers()).get("user-agent"),

@@ -21,6 +21,9 @@ if [ "${1:-}" != "--no-pull" ]; then
   say "Fetching the latest code"
   git -C "$REPO" fetch --quiet origin main
   git -C "$REPO" reset --quiet --hard origin/main
+  # Refresh the helper commands and server settings, then continue with the new version of this script.
+  bash "$REPO/deploy/install-helpers.sh"
+  exec /usr/local/bin/scopeflow-update --no-pull
 fi
 REV="$(git -C "$REPO" rev-parse --short HEAD)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -48,10 +51,7 @@ chown -R root:root "$RELEASE"
 chmod -R go-w "$RELEASE"
 
 say "Updating the database"
-(
-  cd "$SRC"
-  sudo -u "$APP_USER" env HOME="$BASE/build" /usr/local/bin/scopeflow-env npx --no-install tsx scripts/migrate.ts
-)
+/usr/local/bin/scopeflow-db-migrate
 
 PREVIOUS="$(readlink -f "$BASE/current" 2>/dev/null || true)"
 ln -sfn "$RELEASE" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"

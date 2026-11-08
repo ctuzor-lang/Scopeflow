@@ -3,7 +3,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { Disclosure } from "@/components/Disclosure";
 import { listBaselines } from "@/lib/baselines";
 import { STATUS_LABEL, formatMoney, listChangeRequests } from "@/lib/changes";
-import { currentTenant } from "@/lib/request";
+import { currentTenant, requireUser } from "@/lib/request";
 import { raiseChangeAction } from "../../changes-actions";
 
 const fmtDate = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(d);
@@ -50,6 +50,8 @@ function RaiseForm({ projectId }: { projectId: string }) {
 export default async function ChangesPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   const tenant = await currentTenant();
+  // Pages render alongside their layout, so each page must check access itself (security review F1).
+  await requireUser();
   const [changes, versions] = await Promise.all([listChangeRequests(tenant.id, projectId), listBaselines(tenant.id, projectId)]);
   const latest = versions[0];
 

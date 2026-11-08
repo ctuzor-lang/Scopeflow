@@ -131,3 +131,24 @@ describe("tenant isolation", () => {
     expect(sessions.every((s) => s.token_hash !== r.sessionToken)).toBe(true);
   });
 });
+
+describe("sign-in limits (security review F5)", () => {
+  it("simultaneous requests can't exceed the per-window code limit", async () => {
+    const { tenant, adminEmail } = await makeTenant();
+    await Promise.all(Array.from({ length: 20 }, () => requestSignInCode(tenant, adminEmail, null)));
+    const rows = await query<{ n: string }>("select count(*) as n from login_code where email = $1", [adminEmail]);
+    expect(Number(rows[0].n)).toBe(MAX_CODES_PER_WINDOW);
+  });
+
+  it("locks an address for the day after 10 wrong codes, even with fresh codes", async () => {
+    const { tenant, adminEmail } = await makeTenant();
+    for (let round = 0; round < 2; round++) {
+      await requestSignInCode(tenant, adminEmail, null);
+      const bad = lastCodeFor(adminEmail) === "000000" ? "111111" : "000000";
+      for (let i = 0; i < MAX_CODE_ATTEMPTS; i++) await verifySignInCode(tenant, adminEmail, bad, null);
+    }
+    const before = sentMail.length;
+    await requestSignInCode(tenant, adminEmail, null);
+    expect(sentMail.length).toBe(before); // no new code issued
+  });
+});

@@ -65,3 +65,24 @@ app listens on 127.0.0.1 and is reachable solely through the web server in front
 - Within minutes of DNS going live, automated scanners sent bogus Next.js server-action IDs ("Server Reference ID did not match"). They were rejected. Consider rate limiting or blocking at nginx, and log monitoring.
 - `npm audit --omit=dev`: postcss (via next, build-time only, no untrusted CSS processed) and uuid (via exceljs, the affected buffer API isn't used). Re-check when Next 16 / exceljs updates are adopted.
 - Sign-in codes were written to the server log until SMTP was configured. Once email is on, the log no longer contains codes; older journal entries age out under journald's normal rotation.
+
+## Independent security review, 8 Nov 2026 — status
+
+Reviewed by a separate agent with no part in building the code (findings F1–F11). Fixed in the release after cf52b9d:
+
+| ID | Severity | Finding | Status |
+| --- | --- | --- | --- |
+| F1 | High | Changes and version pages leaked data without sign-in (check only in layout) | **Fixed**: every page checks access; test fails the build if a page doesn't. Verified against a production build (no data before sign-in, including RSC requests). |
+| F2 | Medium | 12 KB spreadsheet could exhaust memory and crash the app | **Fixed**: inflate with a 25 MB cap and check rows/columns before ExcelJS loads it; test with the reviewer's file. |
+| F3 | Medium | Display names on the shared user table can be set by another tenant | **Open; must fix before a second tenant goes live.** Only one tenant exists today. Plan: store names per membership/project access. |
+| F4 | Medium | App's database account owned the tables, so it could disable triggers or truncate | **Fixed**: `scopeflow_owner` owns everything; the app can only read/write rows. Migrations come from the root-owned clone. Verified: ALTER/TRUNCATE/DROP refused for the app role. **Open:** key the audit hash chain (HMAC) and anchor daily heads off-server. |
+| F5 | Medium | Code guessing: 2,400 guesses/day; simultaneous requests bypassed the limit | **Fixed**: per-address lock; 10 wrong codes per 24 h then locked for the day; nginx POST rate limit. Tests added. |
+| F6 | Medium | Nightly backup failed every night; restore steps wrong | **Fixed**: root-only folder, verified dump, retention works; runbook corrected. **Open:** encrypt and copy backups off-server. |
+| F7 | Low | Backup script followed planted symlinks as root | **Fixed** (root-only 0700 folder, mktemp). |
+| F8 | Low | Stored approval wording could differ from what the client saw | **Fixed**: the page sends a hash of the wording; approval refused if it differs. |
+| F9 | Low | Sign-in timing revealed membership | **Fixed**: email sent in the background. |
+| F10 | Low | HTTPS catch-all missing; no rate limits; nginx version shown | **Fixed**: 443 default rejects unknown names; per-IP limits; server_tokens off. Tested with nginx locally. |
+| F11 | Low | Production silently logs sign-in codes when email isn't set | **Partly**: loud warning at start-up; still allowed for first-time setup. |
+| Info | — | CSP, extra systemd hardening, email in URLs, AI free-text minimisation, AI hourly limit race | Open, low priority. |
+
+Also found while verifying the fixes: the production build was missing files that the scope page (spreadsheet import) and the change control PDF need, so both would have failed on the live server. Fixed in next.config.ts and checked against a production build.

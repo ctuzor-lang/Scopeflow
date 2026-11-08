@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { kindLabel } from "@/components/ItemFields";
 import { baselineItems, changesInBaseline, diffItems, getBaseline, verifyBaseline, type ItemPayload } from "@/lib/baselines";
 import { crRef } from "@/lib/changes";
-import { currentTenant } from "@/lib/request";
+import { currentTenant, requireUser } from "@/lib/request";
 
 const fmt = (d: Date) =>
   new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/London" }).format(d);
@@ -79,6 +79,8 @@ function ItemTable({ items }: { items: { i: ItemPayload; note?: string; before?:
 export default async function VersionPage({ params }: { params: Promise<{ projectId: string; version: string }> }) {
   const { projectId, version } = await params;
   const tenant = await currentTenant();
+  // Pages render alongside their layout, so each page must check access itself (security review F1).
+  await requireUser();
   const n = Number(version);
   const baseline = await getBaseline(tenant.id, projectId, n);
   if (!baseline) notFound();

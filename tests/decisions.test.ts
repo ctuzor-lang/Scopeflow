@@ -127,6 +127,13 @@ describe("client decisions", () => {
     expect(sentMail.some((m) => m.to === s.adminEmail && m.subject.startsWith("CR-001 approved"))).toBe(true);
   });
 
+  it("refuses an approval if the wording shown differs from what would be stored (F8)", async () => {
+    const s = await setup();
+    const r = await decide(s, { shownStatementDigest: "0".repeat(64) });
+    expect(r).toMatchObject({ ok: false, reason: "stale" });
+    expect((await getChangeRequest(s.tenantId, s.projectId, 1))?.status).toBe("awaiting_client");
+  });
+
   it("a viewer can't decide", async () => {
     const s = await setup();
     expect(await decide(s, { userId: s.viewerId })).toMatchObject({ ok: false, reason: "not_approver" });

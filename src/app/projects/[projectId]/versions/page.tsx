@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { listBaselines } from "@/lib/baselines";
-import { currentTenant } from "@/lib/request";
+import { currentTenant, requireUser } from "@/lib/request";
 
 const fmt = (d: Date) =>
   new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(d);
@@ -8,6 +8,8 @@ const fmt = (d: Date) =>
 export default async function VersionsPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   const tenant = await currentTenant();
+  // Pages render alongside their layout, so each page must check access itself (security review F1).
+  await requireUser();
   const versions = await listBaselines(tenant.id, projectId);
   if (versions.length === 0) {
     return (

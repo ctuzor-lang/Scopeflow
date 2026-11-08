@@ -191,3 +191,14 @@ describe("project isolation", () => {
     ).rejects.toThrow(/foreign key/);
   });
 });
+
+describe("import limits (security review F2)", () => {
+  it("rejects a tiny spreadsheet that would expand to millions of cells, without loading it", async () => {
+    const { readFileSync } = await import("node:fs");
+    const t = Date.now();
+    const r = await parseScopeFile("wide.xlsx", readFileSync("tests/fixtures/wide-bomb.xlsx"));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors[0]).toMatch(/too large/);
+    expect(Date.now() - t).toBeLessThan(2000);
+  });
+});
