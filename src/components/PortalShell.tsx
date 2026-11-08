@@ -3,11 +3,13 @@ import type { ReactNode } from "react";
 import type { Tenant } from "@/lib/tenant";
 import { signOutAction } from "@/app/actions";
 import { BrandMark } from "./BrandMark";
+import { DemoBar } from "./DemoBar";
 
 /** The client-facing frame: the agency's brand only, no workspace navigation. */
 export function PortalShell({ tenant, who, children }: { tenant: Tenant; who: string; children: ReactNode }) {
   return (
     <>
+      <DemoBar tenant={tenant} role="client" />
       <header className="topbar">
         <div className="wrap">
           <Link href="/portal" style={{ textDecoration: "none", marginRight: "auto" }} aria-label="Your decisions">

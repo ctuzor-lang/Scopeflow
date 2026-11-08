@@ -48,3 +48,9 @@ export function mailError(err: unknown): string {
   const parts = [e.code, e.responseCode, e.message?.split("\n")[0]].filter(Boolean);
   return parts.join(" ").slice(0, 300) || "unknown error";
 }
+
+/** Demo sandboxes never send email: anyone can type any address into a public demo. */
+export function mailerFor(tenant: { sandbox: boolean }): Mailer {
+  if (tenant.sandbox) return { send: async () => {} };
+  return mailer();
+}

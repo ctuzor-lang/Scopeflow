@@ -4,6 +4,7 @@ import type { CurrentUser } from "@/lib/auth";
 import type { Tenant } from "@/lib/tenant";
 import { signOutAction } from "@/app/actions";
 import { BrandMark } from "./BrandMark";
+import { DemoBar } from "./DemoBar";
 
 type Section = "projects" | "branding";
 
@@ -20,6 +21,7 @@ export function AppShell({
 }) {
   return (
     <>
+      <DemoBar tenant={tenant} role="agency" />
       <header className="topbar">
         <div className="wrap">
           <Link href="/" style={{ textDecoration: "none", marginRight: "auto" }} aria-label={`${tenant.branding.displayName} workspace home`}>

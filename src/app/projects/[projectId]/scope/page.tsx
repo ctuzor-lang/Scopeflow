@@ -7,6 +7,7 @@ import { changesAwaitingIncorporation, diffSize, draftChanges } from "@/lib/base
 import { crRef } from "@/lib/changes";
 import { canPublish, getProject } from "@/lib/projects";
 import { currentTenant, requireUser } from "@/lib/request";
+import { plural } from "@/lib/format";
 import { draftItems, type DraftItem } from "@/lib/scope";
 import { addItemAction, importScopeAction, publishAction, removeItemAction } from "../../actions";
 
@@ -38,7 +39,7 @@ export default async function ScopePage({ params }: { params: Promise<{ projectI
       <section className="main">
         <div className="stat-row" style={{ marginBottom: 16 }}>
           <span>
-            <strong>{items.length}</strong> items in the draft
+            <strong>{items.length}</strong> {items.length === 1 ? "item" : "items"} in the draft
           </span>
           {changes.latest ? (
             <span className="muted">
@@ -64,7 +65,7 @@ export default async function ScopePage({ params }: { params: Promise<{ projectI
             <div key={section}>
               <h2 className="section-title">{section}</h2>
               <div className="table-box">
-                <table className="table">
+                <table className="table stack-mobile">
                   <thead>
                     <tr>
                       <th scope="col" style={{ width: 110 }}>Ref</th>
@@ -80,7 +81,9 @@ export default async function ScopePage({ params }: { params: Promise<{ projectI
                       <tr key={i.id}>
                         <td className="mono">{i.key}</td>
                         <td>
-                          <div style={{ fontWeight: 600 }}>{i.title}</div>
+                          <Link href={`/projects/${projectId}/scope/items/${i.id}`} style={{ fontWeight: 600, textDecoration: "none" }}>
+                            {i.title}
+                          </Link>
                           {i.description ? <div className="muted" style={{ fontSize: 14 }}>{i.description}</div> : null}
                           {i.acceptanceCriteria ? (
                             <div style={{ fontSize: 14, marginTop: 4 }}>
@@ -115,35 +118,49 @@ export default async function ScopePage({ params }: { params: Promise<{ projectI
       </section>
 
       <aside className="side stack">
-        {canPublish(user.role) ? (
-          <div className="panel stack">
-            <h2 style={{ fontSize: 20, fontWeight: 700 }}>Publish version {nextVersion}</h2>
-            <p className="muted" style={{ margin: 0, fontSize: 15 }}>
-              Publishing locks the draft as version {nextVersion}. It can't be edited afterwards; later edits become a new
-              version. Client sign-off arrives in a later build slice.
-            </p>
-            <ActionForm action={publishAction.bind(null, projectId)} submitLabel={`Publish version ${nextVersion}`} pendingLabel="Publishing…" buttonClass="btn accent">
-              {approved.length ? (
-                <fieldset>
-                  <legend>Approved changes this version puts into effect</legend>
-                  {approved.map((c) => (
-                    <label key={c.number} className="check">
-                      <input type="checkbox" name="includes" value={c.number} defaultChecked />
-                      <span>
-                        <span className="mono">{crRef(c.number)}</span> {c.title}
-                      </span>
-                    </label>
-                  ))}
-                  <span className="hint">Untick any change the draft doesn&apos;t reflect yet.</span>
-                </fieldset>
-              ) : null}
-              <label className="check">
-                <input type="checkbox" name="confirm" />
-                <span>
-                  I've checked the draft and it matches what was agreed{changes.latest ? ` (${pending} changes since version ${changes.latest.version})` : ""}.
-                </span>
-              </label>
-            </ActionForm>
+        {canPublish(user.role) && items.length > 0 ? (
+          <div className="panel stack" id="publish">
+            <h2 style={{ fontSize: 20, fontWeight: 700 }}>
+              {pending === 0 && approved.length === 0 && changes.latest ? `Version ${changes.latest.version} is up to date` : `Publish version ${nextVersion}`}
+            </h2>
+            {pending === 0 && approved.length === 0 && changes.latest ? (
+              <p className="muted" style={{ margin: 0, fontSize: 15 }}>
+                The draft matches agreed version {changes.latest.version}. When an approved change needs adding, edit the
+                draft here and publish a new version.
+              </p>
+            ) : (
+              <>
+                <p className="muted" style={{ margin: 0, fontSize: 15 }}>
+                  {changes.latest
+                    ? `Locks the draft as version ${nextVersion}, replacing version ${changes.latest.version} as the agreed scope. Earlier versions stay on record.`
+                    : "Locks the draft as version 1: the scope you and the client agreed. Every change request is measured against it."}{" "}
+                  A published version can&apos;t be edited.
+                </p>
+                <ActionForm action={publishAction.bind(null, projectId)} submitLabel={`Publish version ${nextVersion}`} pendingLabel="Publishing…" buttonClass="btn accent">
+                  {approved.length ? (
+                    <fieldset>
+                      <legend>Approved changes this version puts into effect</legend>
+                      {approved.map((c) => (
+                        <label key={c.number} className="check">
+                          <input type="checkbox" name="includes" value={c.number} defaultChecked />
+                          <span>
+                            <span className="mono">{crRef(c.number)}</span> {c.title}
+                          </span>
+                        </label>
+                      ))}
+                      <span className="hint">Untick any change the draft doesn&apos;t reflect yet.</span>
+                    </fieldset>
+                  ) : null}
+                  <label className="check">
+                    <input type="checkbox" name="confirm" />
+                    <span>
+                      I&apos;ve checked the draft and it matches what was agreed
+                      {changes.latest ? ` (${plural(pending, "change")} since version ${changes.latest.version})` : ""}.
+                    </span>
+                  </label>
+                </ActionForm>
+              </>
+            )}
           </div>
         ) : null}
 

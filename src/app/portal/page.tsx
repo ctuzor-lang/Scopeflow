@@ -12,6 +12,8 @@ export default async function PortalHome() {
   for (const r of rows) {
     const p = projects.get(r.project_id) ?? { name: r.project_name, role: r.role, changes: [] };
     if (r.number !== null) p.changes.push(r);
+    // Decisions waiting come first.
+    p.changes.sort((a, b) => Number(b.status === "awaiting_client") - Number(a.status === "awaiting_client"));
     projects.set(r.project_id, p);
   }
   const waiting = rows.filter((r) => r.status === "awaiting_client").length;
@@ -22,9 +24,14 @@ export default async function PortalHome() {
       <h1 style={{ fontSize: 36, fontWeight: 800, margin: "8px 0 8px" }}>
         {waiting ? `${waiting} ${waiting === 1 ? "decision" : "decisions"} waiting` : "You're all caught up"}
       </h1>
-      <p className="muted" style={{ margin: "0 0 28px" }}>
+      <p className="muted" style={{ margin: "0 0 16px" }}>
         Proposed changes to your projects&apos; agreed scope, with what each would cost and how it affects the timeline.
       </p>
+      <ol className="how" aria-label="How it works">
+        <li><strong>Review</strong> what changes, the cost and the effect on the timeline.</li>
+        <li><strong>Ask</strong> {tenant.branding.displayName} questions if anything is unclear.</li>
+        <li><strong>Decide.</strong> Approve or decline; you both get the same signed record (PDF).</li>
+      </ol>
       {[...projects.entries()].map(([id, p]) => (
         <section key={id} style={{ marginBottom: 28 }}>
           <h2 className="section-title" style={{ marginTop: 0 }}>
@@ -43,6 +50,7 @@ export default async function PortalHome() {
                     <span>
                       <span className="mono muted">{crRef(c.number!)}</span>
                       <span style={{ display: "block", fontWeight: 600 }}>{c.title}</span>
+                      {c.status === "awaiting_client" ? <span className="next-step act">Review and decide →</span> : null}
                     </span>
                     <span className={`status status-${c.status}`}>{CLIENT_STATUS_LABEL[c.status as CrStatus]}</span>
                   </Link>

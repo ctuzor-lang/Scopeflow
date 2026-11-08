@@ -21,6 +21,10 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   STORAGE_DIR: z.string().default("./storage"),
+  // The workspace that owns the platform (shows the Chayse mark rather than an initial).
+  PLATFORM_TENANT_SLUG: z.string().default("chayse"),
+  // Address of the public demo (e.g. demo.chayse.com). Unset = no demo.
+  DEMO_HOSTNAME: z.string().optional(),
   // AI suggestions (slice 6). Without a key the feature is unavailable everywhere.
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default("claude-sonnet-5-5"),

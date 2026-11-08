@@ -2,7 +2,7 @@ import { z } from "zod";
 import { recordAudit } from "./audit";
 import { normaliseEmail } from "./auth";
 import { one, query, tx } from "./db";
-import { mailer } from "./mailer";
+import { mailerFor } from "./mailer";
 import { isUuid } from "./projects";
 import type { Tenant } from "./tenant";
 
@@ -74,7 +74,11 @@ export async function inviteClient(p: {
   const parsed = inviteInput.safeParse(p.input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const v = parsed.data;
-  const email = normaliseEmail(v.email);
+  // In a public demo sandbox, real addresses are never stored (they'd create real, shared user records):
+  // the address becomes a throwaway one that the hourly clean-up removes with the sandbox.
+  const email = p.tenant.sandbox
+    ? `${normaliseEmail(v.email).split("@")[0].replace(/[^a-z0-9.-]/g, "").slice(0, 30) || "guest"}-${p.tenant.slug.slice(5)}@sandbox.invalid`
+    : normaliseEmail(v.email);
 
   const result = await tx(async (db) => {
     const project = (
@@ -117,7 +121,7 @@ export async function inviteClient(p: {
   if (!result.ok) return result;
 
   const base = await tenantBaseUrl(p.tenant.id);
-  await mailer().send({
+  await mailerFor(p.tenant).send({
     to: email,
     fromName: p.tenant.branding.displayName,
     subject: `${p.tenant.branding.displayName} has given you access to ${result.projectName}`,

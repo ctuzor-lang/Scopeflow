@@ -74,7 +74,8 @@ const provider = (): AiProvider => override ?? new AnthropicProvider();
 export const aiConfigured = () => Boolean(override || config().ANTHROPIC_API_KEY);
 
 export async function aiEnabledForTenant(tenantId: string): Promise<boolean> {
-  const r = await one<{ ai_enabled: boolean }>("select ai_enabled from tenant where id = $1", [tenantId]);
+  // Never in demo sandboxes: anyone can type anything into a public demo.
+  const r = await one<{ ai_enabled: boolean }>("select ai_enabled from tenant where id = $1 and sandbox_expires_at is null", [tenantId]);
   return aiConfigured() && Boolean(r?.ai_enabled);
 }
 

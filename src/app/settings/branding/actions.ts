@@ -36,6 +36,7 @@ export async function saveBrandingAction(_prev: FormState, formData: FormData): 
 export async function uploadLogoAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const ctx = await requireAdmin();
   if (!ctx) return { status: "error", message: "Only workspace admins can change branding." };
+  if (ctx.tenant.sandbox) return { status: "error", message: "Logo uploads are switched off in the demo. Try changing the brand colour instead." };
   const file = formData.get("logo");
   if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Choose a logo file to upload." };
   const result = await saveLogo({

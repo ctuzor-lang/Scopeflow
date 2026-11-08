@@ -203,7 +203,7 @@ export const getImpactDraft = (crId: string) => readDraft(pool(), crId);
 
 export async function listRevisions(crId: string): Promise<Revision[]> {
   const rows = await query<{ id: string; rev_no: number; payload: AssessmentPayload; content_digest: string; published_at: Date; email: string | null }>(
-    `select r.id, r.rev_no, r.payload, r.content_digest, r.published_at, u.email
+    `select r.id, r.rev_no, r.payload, r.content_digest, r.published_at, coalesce(u.display_name, u.email) as email
      from impact_revision r left join app_user u on u.id = r.published_by
      where r.change_request_id = $1 order by r.rev_no desc`,
     [crId],

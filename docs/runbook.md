@@ -80,3 +80,12 @@ Then point their DNS at the server, add their hostname to the nginx `server_name
 - The app listens on 127.0.0.1 only. nginx overwrites the forwarded-host headers the app relies on, so never expose port 3000 directly.
 - Secrets are typed on the server by the helper commands and are never stored in GitHub.
 - Before real client use: the independent security review (docs/review-notes.md) and a lawyer's review of the approval wording.
+
+## Public demo (demo.chayse.com)
+
+A public tour at `/tour` with a "Try it yourself" button. Each visitor gets a private sandbox workspace (a tenant marked `sandbox_expires_at`), reached only through a signed `sf_demo` cookie on the demo address.
+
+- Switch on once: add a DNS A record for the demo address, then `scopeflow-enable-demo demo.chayse.com` (adds it to nginx and the certificate, sets `DEMO_HOSTNAME`).
+- Sandboxes never send email, can't use AI or upload logos, store only `…@sandbox.invalid` addresses, allow up to 5 projects, and expire after 24 hours. One address can start 5 per hour; at most 300 are active.
+- `scopeflow-demo-cleanup` runs hourly (cron) and deletes expired sandboxes completely. It's the only place triggers are suspended, and it touches only sandbox tenants.
+- To switch the demo off: remove `DEMO_HOSTNAME` from /etc/scopeflow/scopeflow.env and `systemctl restart scopeflow`.

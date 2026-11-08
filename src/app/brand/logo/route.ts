@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { contentTypeFor, storage } from "@/lib/storage";
-import { requestHost, resolveTenant, tenantLogoKey } from "@/lib/tenant";
+import { tenantForRequest, tenantLogoKey } from "@/lib/tenant";
 
 /** Serves the logo of the tenant that owns this address, and no other. */
 export async function GET(request: NextRequest) {
-  const tenant = await resolveTenant(requestHost(request.headers));
+  const tenant = await tenantForRequest(request.headers, (name) => request.cookies.get(name)?.value);
   if (!tenant) return new NextResponse(null, { status: 404 });
   const key = await tenantLogoKey(tenant.id);
   if (!key) return new NextResponse(null, { status: 404 });

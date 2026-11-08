@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ProjectTabs } from "@/components/ProjectTabs";
-import { listBaselines } from "@/lib/baselines";
-import { query } from "@/lib/db";
-import { getProject } from "@/lib/projects";
+import { ProjectJourney } from "@/components/ProjectJourney";
+import { getProject, projectProgress } from "@/lib/projects";
 import { currentTenant, requireUser } from "@/lib/request";
 
 export default async function ProjectLayout({
@@ -20,10 +19,7 @@ export default async function ProjectLayout({
   const user = await requireUser();
   const project = await getProject(tenant.id, projectId);
   if (!project) notFound();
-  const [versions, changes] = await Promise.all([
-    listBaselines(tenant.id, projectId),
-    query<{ n: string }>("select count(*) as n from change_request where project_id = $1 and tenant_id = $2", [projectId, tenant.id]),
-  ]);
+  const progress = await projectProgress(tenant.id, projectId);
   return (
     <AppShell tenant={tenant} user={user} current="projects">
       <Link href="/" className="hint">
@@ -38,7 +34,8 @@ export default async function ProjectLayout({
           <h1>{project.name}</h1>
         </div>
       </div>
-      <ProjectTabs projectId={project.id} versionCount={versions.length} changeCount={Number(changes[0]?.n ?? 0)} />
+      <ProjectJourney projectId={project.id} p={progress} clientName={project.clientName} />
+      <ProjectTabs projectId={project.id} versionCount={progress.versions} changeCount={progress.changes} />
       {children}
     </AppShell>
   );

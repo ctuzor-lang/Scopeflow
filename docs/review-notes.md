@@ -86,3 +86,11 @@ Reviewed by a separate agent with no part in building the code (findings F1–F1
 | Info | — | CSP, extra systemd hardening, email in URLs, AI free-text minimisation, AI hourly limit race | Open, low priority. |
 
 Also found while verifying the fixes: the production build was missing files that the scope page (spreadsheet import) and the change control PDF need, so both would have failed on the live server. Fixed in next.config.ts and checked against a production build.
+
+## Public demo (added 8 Nov 2026) — for the next security review
+
+New public surface: `/tour` and the `startDemoAction` / `switchDemoRoleAction` / `endDemoAction` server actions, live only on `DEMO_HOSTNAME`. Points to check:
+- Tenant on the demo host comes only from the HMAC-signed `sf_demo` cookie and only for tenants with `sandbox_expires_at` in the future; `resolveTenant` (real hosts) excludes sandboxes. Tests cover forged/garbage cookies and a real tenant's id.
+- `openSession` creates sessions without a code; it's called only from the demo actions, which check the demo host and that the tenant is a sandbox.
+- Abuse limits: 5 sandboxes per IP per hour, 300 active, 5 projects per sandbox, nginx POST rate limit. No email (mailerFor), no AI, no logo upload; invitations rewritten to `@sandbox.invalid` so no real `app_user` rows (avoids F3 via the demo).
+- `scopeflow-demo-cleanup` runs as the postgres superuser with `session_replication_role = replica` to bypass the immutability triggers, scoped to sandbox tenants and `@sandbox.invalid` users. Covered by a test that checks a real tenant's audit trail survives.

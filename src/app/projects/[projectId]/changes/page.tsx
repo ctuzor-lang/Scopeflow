@@ -6,6 +6,16 @@ import { STATUS_LABEL, formatMoney, listChangeRequests } from "@/lib/changes";
 import { currentTenant, requireUser } from "@/lib/request";
 import { raiseChangeAction } from "../../changes-actions";
 
+const NEXT_STEP: Record<string, { text: string; act: boolean }> = {
+  submitted: { text: "Next: assess it", act: true },
+  assessing: { text: "Next: finish and send", act: true },
+  awaiting_client: { text: "Waiting for the client", act: false },
+  approved: { text: "Next: put into scope", act: true },
+  rejected: { text: "Closed", act: false },
+  incorporated: { text: "Done", act: false },
+  withdrawn: { text: "Closed", act: false },
+};
+
 const fmtDate = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(d);
 
 function RaiseForm({ projectId }: { projectId: string }) {
@@ -47,8 +57,15 @@ function RaiseForm({ projectId }: { projectId: string }) {
   );
 }
 
-export default async function ChangesPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function ChangesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ welcome?: string }>;
+}) {
   const { projectId } = await params;
+  const { welcome } = await searchParams;
   const tenant = await currentTenant();
   // Pages render alongside their layout, so each page must check access itself (security review F1).
   await requireUser();
@@ -58,6 +75,13 @@ export default async function ChangesPage({ params }: { params: Promise<{ projec
   return (
     <div className="split">
       <section className="main">
+        {welcome && tenant.sandbox ? (
+          <div className="note" style={{ marginBottom: 20 }}>
+            <strong>Welcome to your own demo workspace.</strong> You&apos;re Alex, a consultant delivering this project for
+            Northwind Retail. The scope is agreed (version 1) and three changes have come in. Follow the dark bar at the top:
+            it switches you between your view and the client&apos;s. Nothing you do here leaves this sandbox.
+          </div>
+        ) : null}
         {changes.length === 0 ? (
           <div className="empty stack">
             <h2 style={{ fontSize: 22, fontWeight: 700 }}>No change requests yet</h2>
@@ -68,7 +92,7 @@ export default async function ChangesPage({ params }: { params: Promise<{ projec
           </div>
         ) : (
           <div className="table-box">
-            <table className="table">
+            <table className="table stack-mobile">
               <thead>
                 <tr>
                   <th scope="col" style={{ width: 90 }}>Ref</th>
@@ -104,6 +128,9 @@ export default async function ChangesPage({ params }: { params: Promise<{ projec
                     </td>
                     <td>
                       <span className={`status status-${c.status}`}>{STATUS_LABEL[c.status]}</span>
+                      {NEXT_STEP[c.status] ? (
+                        <span className={`next-step${NEXT_STEP[c.status].act ? " act" : ""}`}>{NEXT_STEP[c.status].text}</span>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -114,12 +141,14 @@ export default async function ChangesPage({ params }: { params: Promise<{ projec
       </section>
       <aside className="side stack">
         {latest ? (
+          <div id="log">
           <Disclosure title="Log a change request" defaultOpen={changes.length === 0}>
             <p className="muted" style={{ margin: "0 0 12px", fontSize: 15 }}>
               It will be assessed against version {latest.version}, the latest agreed scope.
             </p>
             <RaiseForm projectId={projectId} />
           </Disclosure>
+          </div>
         ) : (
           <div className="panel">
             <p style={{ margin: 0 }}>

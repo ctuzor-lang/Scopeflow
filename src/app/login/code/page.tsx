@@ -9,7 +9,7 @@ export default async function CodePage({ searchParams }: { searchParams: Promise
   const tenant = await currentTenant();
   if (await currentUser()) redirect("/");
   const { email = "", error } = await searchParams;
-  if (!email) redirect("/login");
+  if (!email || tenant.sandbox) redirect("/login");
   return (
     <main className="card-narrow stack">
       <BrandMark tenant={tenant} sub="ScopeFlow" />

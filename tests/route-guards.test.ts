@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 // Next renders a page alongside its layout and can skip the layout entirely for some requests,
 // so every page must check who is signed in itself (security review F1).
-const PUBLIC_PAGES = new Set(["src/app/login/page.tsx", "src/app/login/code/page.tsx"]);
+const PUBLIC_PAGES = new Set(["src/app/login/page.tsx", "src/app/login/code/page.tsx", "src/app/tour/page.tsx"]);
 const REDIRECT_ONLY = new Set(["src/app/projects/[projectId]/page.tsx"]);
 const GUARD = /\b(requireUser|requireClient|agencyUser|currentUser)\(/;
 const ROUTE_GUARD = /\buserForSession\(|^\s*\/\/ public:/m;

@@ -8,7 +8,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 [ "$(id -u)" -eq 0 ] || { echo "Run as root." >&2; exit 1; }
 SITE=/etc/nginx/sites-available/scopeflow
 
-for name in env update db-migrate set-mail set-ai-key enable-https backup; do
+for name in env update db-migrate set-mail set-ai-key enable-https enable-demo demo-cleanup backup; do
   install -m 0755 "$REPO_DIR/deploy/$name.sh" "/usr/local/bin/scopeflow-$name"
 done
 install -m 0755 "$REPO_DIR/deploy/install-helpers.sh" /usr/local/bin/scopeflow-install-helpers
@@ -25,6 +25,10 @@ find /var/backups/scopeflow -maxdepth 1 -type f -exec chown root:root {} + -exec
 cat > /etc/cron.d/scopeflow-backup <<'EOF'
 # Nightly database and file backup at 02:30, kept for 14 days.
 30 2 * * * root /usr/local/bin/scopeflow-backup >> /var/log/scopeflow-backup.log 2>&1
+EOF
+cat > /etc/cron.d/scopeflow-demo-cleanup <<'EOF'
+# Remove expired public-demo sandboxes, hourly.
+17 * * * * root /usr/local/bin/scopeflow-demo-cleanup >> /var/log/scopeflow-demo-cleanup.log 2>&1
 EOF
 
 # nginx: server-wide hardening, plus rate limits inside the existing site (F10).

@@ -50,7 +50,7 @@ export function baselineDigest(projectId: string, version: number, items: ItemPa
 }
 
 const BASELINE_SELECT = `
-  select b.id, b.version_number, b.status, b.content_digest, b.item_count, b.published_at, u.email as published_by_email
+  select b.id, b.version_number, b.status, b.content_digest, b.item_count, b.published_at, coalesce(u.display_name, u.email) as published_by_email
   from baseline b left join app_user u on u.id = b.published_by
   where b.project_id = $1 and b.tenant_id = $2`;
 

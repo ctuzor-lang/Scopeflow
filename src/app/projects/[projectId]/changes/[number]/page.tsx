@@ -17,7 +17,7 @@ import {
   getImpactDraft,
   listRevisions,
 } from "@/lib/changes";
-import { canPublish, getProject } from "@/lib/projects";
+import { canPublish, getProject, projectProgress } from "@/lib/projects";
 import { currentTenant, requireUser } from "@/lib/request";
 import { agencyCommentAction, publishAssessmentAction, saveAssessmentAction, withdrawAction } from "../../../changes-actions";
 
@@ -47,7 +47,7 @@ export default async function ChangePage({ params }: { params: Promise<{ project
     getDecision(cr.id),
     listComments(cr.id),
   ]);
-  const [aiOn, suggestions] = await Promise.all([aiEnabledForTenant(tenant.id), listSuggestions(cr.id)]);
+  const [aiOn, suggestions, progress] = await Promise.all([aiEnabledForTenant(tenant.id), listSuggestions(cr.id), projectProgress(tenant.id, projectId)]);
   const inVersion = cr.status === "incorporated" ? await versionIncludingChange(cr.id) : null;
   const open = ["submitted", "assessing", "awaiting_client"].includes(cr.status);
   const problems = assessmentProblems(draft);
@@ -220,10 +220,15 @@ export default async function ChangePage({ params }: { params: Promise<{ project
               ) : (
                 <>
                   <p className="muted" style={{ margin: 0, fontSize: 15 }}>
-                    This freezes the last saved assessment as R{(latest?.revNo ?? 0) + 1}.
-                    {latest ? ` It replaces R${latest.revNo}; the client can only decide on the newest.` : ""} Client sign-off
-                    arrives in the next build slice.
+                    This freezes the last saved assessment as R{(latest?.revNo ?? 0) + 1} and emails the client&apos;s people to
+                    review it. {latest ? `It replaces R${latest.revNo}; the client can only decide on the newest.` : "They see the figures only after signing in."}
                   </p>
+                  {progress.approvers === 0 ? (
+                    <p className="note" style={{ margin: 0 }}>
+                      No one at {project.clientName} can approve yet.{" "}
+                      <Link href={`/projects/${projectId}/clients`}>Invite an approver</Link> so they can decide.
+                    </p>
+                  ) : null}
                   <ActionForm action={publishAssessmentAction.bind(null, projectId, n)} submitLabel={`Publish R${(latest?.revNo ?? 0) + 1}`} pendingLabel="Publishing…" buttonClass="btn accent">
                     <label className="check">
                       <input type="checkbox" name="confirm" />

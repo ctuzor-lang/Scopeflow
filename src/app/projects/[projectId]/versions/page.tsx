@@ -24,7 +24,7 @@ export default async function VersionsPage({ params }: { params: Promise<{ proje
   }
   return (
     <div className="table-box">
-      <table className="table">
+      <table className="table stack-mobile">
         <thead>
           <tr>
             <th scope="col">Version</th>

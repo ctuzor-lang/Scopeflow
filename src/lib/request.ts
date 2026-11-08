@@ -4,12 +4,18 @@ import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { SESSION_COOKIE, userForSession, type CurrentUser } from "./auth";
 import { config, isProduction } from "./config";
-import { requestHost, resolveTenant, type Tenant } from "./tenant";
+import { isDemoHost, requestHost, tenantForRequest, type Tenant } from "./tenant";
 
 /** The tenant for this request, from the address it was made to. Unknown addresses get a 404. */
 export const currentTenant = cache(async (): Promise<Tenant> => {
-  const tenant = await resolveTenant(requestHost(await headers()));
-  if (!tenant) notFound();
+  const h = await headers();
+  const c = await cookies();
+  const tenant = await tenantForRequest(h, (name) => c.get(name)?.value);
+  if (!tenant) {
+    // On the demo address, no (or an expired) sandbox means: start from the tour.
+    if (isDemoHost(requestHost(h))) redirect("/tour");
+    notFound();
+  }
   return tenant;
 });
 

@@ -26,7 +26,7 @@ export default async function ClientAccessPage({ params }: { params: Promise<{ p
           </div>
         ) : (
           <div className="table-box">
-            <table className="table">
+            <table className="table stack-mobile">
               <thead>
                 <tr>
                   <th scope="col">Person</th>
@@ -65,6 +65,9 @@ export default async function ClientAccessPage({ params }: { params: Promise<{ p
       {manage ? (
         <aside className="side panel stack">
           <h2 style={{ fontSize: 20, fontWeight: 700 }}>Give someone access</h2>
+          {tenant.sandbox ? (
+            <p className="hint" style={{ margin: 0 }}>Demo: nobody is emailed, and any address you type is replaced with a made-up one.</p>
+          ) : null}
           <ActionForm action={inviteClientAction.bind(null, projectId)} submitLabel="Give access and email them" pendingLabel="Sending…" resetOnSuccess>
             <label>
               Name

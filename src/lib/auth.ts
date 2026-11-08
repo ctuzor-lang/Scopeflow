@@ -8,7 +8,7 @@ import {
   sixDigitCode,
 } from "./crypto";
 import { one, query, tx } from "./db";
-import { mailer, mailError } from "./mailer";
+import { mailerFor, mailError } from "./mailer";
 import type { Tenant } from "./tenant";
 
 export const CODE_TTL_MINUTES = 10;
@@ -127,7 +127,7 @@ export async function requestSignInCode(
   // Sent in the background: waiting for it would make members' requests measurably slower (F9).
   void (async () => {
     try {
-      await mailer().send({
+      await mailerFor(tenant).send({
         to: email,
         fromName: tenant.branding.displayName,
         subject: `Your sign-in code for ${tenant.branding.displayName}`,
@@ -149,6 +149,22 @@ export async function requestSignInCode(
 
 export type VerifyResult =
   { ok: true; sessionToken: string; expiresAt: Date } | { ok: false };
+
+/** Opens a session for a user without a code. Used only by the public demo, inside its own sandbox. */
+export async function openSession(tenantId: string, userId: string, actionLabel: string): Promise<{ token: string; expiresAt: Date }> {
+  const token = randomToken(32);
+  return tx(async (db) => {
+    const session = (
+      await db.query<{ id: string; expires_at: Date }>(
+        `insert into session (tenant_id, user_id, token_hash, expires_at)
+         values ($1, $2, $3, now() + interval '1 day') returning id, expires_at`,
+        [tenantId, userId, sha256(token)],
+      )
+    ).rows[0];
+    await recordAudit(db, { tenantId, actorUserId: userId, action: actionLabel, target: `session:${session.id}` });
+    return { token, expiresAt: session.expires_at };
+  });
+}
 
 /** Checks a code and, if it's right, opens a session bound to this tenant. */
 export async function verifySignInCode(
