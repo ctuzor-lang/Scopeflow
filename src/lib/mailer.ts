@@ -41,3 +41,10 @@ export function mailer(): Mailer {
   if (override) return override;
   return config().MAIL_TRANSPORT === "smtp" ? new SmtpMailer() : new ConsoleMailer();
 }
+
+/** A short, secret-free description of a sending failure for the server log. */
+export function mailError(err: unknown): string {
+  const e = err as { code?: string; responseCode?: number; message?: string };
+  const parts = [e.code, e.responseCode, e.message?.split("\n")[0]].filter(Boolean);
+  return parts.join(" ").slice(0, 300) || "unknown error";
+}

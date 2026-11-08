@@ -2,7 +2,7 @@ import { recordAudit } from "./audit";
 import { config } from "./config";
 import { hmac, randomToken, safeEqualHex, sha256, sixDigitCode } from "./crypto";
 import { one, query, tx } from "./db";
-import { mailer } from "./mailer";
+import { mailer, mailError } from "./mailer";
 import type { Tenant } from "./tenant";
 
 export const CODE_TTL_MINUTES = 10;
@@ -77,17 +77,22 @@ export async function requestSignInCode(tenant: Tenant, rawEmail: string, ip: st
     });
   });
 
-  await mailer().send({
-    to: email,
-    fromName: tenant.branding.displayName,
-    subject: `Your sign-in code for ${tenant.branding.displayName}`,
-    text: [
-      `Your sign-in code is ${code}.`,
-      "",
-      `It expires in ${CODE_TTL_MINUTES} minutes and works once.`,
-      "If you didn't ask for this code, you can ignore this email.",
-    ].join("\n"),
-  });
+  try {
+    await mailer().send({
+      to: email,
+      fromName: tenant.branding.displayName,
+      subject: `Your sign-in code for ${tenant.branding.displayName}`,
+      text: [
+        `Your sign-in code is ${code}.`,
+        "",
+        `It expires in ${CODE_TTL_MINUTES} minutes and works once.`,
+        "If you didn't ask for this code, you can ignore this email.",
+      ].join("\n"),
+    });
+  } catch (err) {
+    // Same response either way so the page doesn't reveal who is a member; the operator sees this in the log.
+    console.error(`[mail] sign-in code NOT sent (tenant ${tenant.slug}): ${mailError(err)}`);
+  }
 }
 
 export type VerifyResult = { ok: true; sessionToken: string; expiresAt: Date } | { ok: false };

@@ -2,7 +2,7 @@ import { recordAudit } from "./audit";
 import { crRef, formatMoney, type AssessmentPayload } from "./changes";
 import { tenantBaseUrl } from "./clients";
 import { one, query, tx } from "./db";
-import { mailer } from "./mailer";
+import { mailer, mailError } from "./mailer";
 import type { Tenant } from "./tenant";
 
 /**
@@ -221,7 +221,7 @@ async function notifyAgency(tenant: Tenant, projectId: string, mail: { subject: 
        and (m.role in ('admin', 'pm') or u.id = (select created_by from project where id = $2))`,
     [tenant.id, projectId],
   );
-  for (const r of rows) await mailer().send({ to: r.email, fromName: "ScopeFlow", subject: mail.subject, text: mail.text });
+  for (const r of rows) await sendQuietly({ to: r.email, fromName: "ScopeFlow", subject: mail.subject, text: mail.text });
 }
 
 export async function notifyClients(tenant: Tenant, projectId: string, mail: { subject: string; text: string }) {
@@ -230,7 +230,7 @@ export async function notifyClients(tenant: Tenant, projectId: string, mail: { s
      where a.project_id = $1 and a.tenant_id = $2 and a.status = 'active'`,
     [projectId, tenant.id],
   );
-  for (const r of rows) await mailer().send({ to: r.email, fromName: tenant.branding.displayName, subject: mail.subject, text: mail.text });
+  for (const r of rows) await sendQuietly({ to: r.email, fromName: tenant.branding.displayName, subject: mail.subject, text: mail.text });
 }
 
 /** Tells the project's client people a change is waiting for a decision. No figures in the email. */
@@ -244,4 +244,13 @@ export async function notifyDecisionNeeded(tenant: Tenant, projectId: string, nu
       `Sign in to review the impact and decide: ${base}/portal/changes/${projectId}/${number}`,
     ].join("\n"),
   });
+}
+
+/** Notifications are a courtesy: the decision is already recorded, so a mail failure is logged, not thrown. */
+async function sendQuietly(mail: Parameters<ReturnType<typeof mailer>["send"]>[0]) {
+  try {
+    await mailer().send(mail);
+  } catch (err) {
+    console.error(`[mail] notification NOT sent: ${mailError(err)}`);
+  }
 }
