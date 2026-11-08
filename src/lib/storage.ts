@@ -38,7 +38,8 @@ class LocalStorage implements Storage {
   }
 }
 
-export const storage = (): Storage => new LocalStorage(join(process.cwd(), config().STORAGE_DIR));
+// resolve() so an absolute STORAGE_DIR (e.g. /var/lib/scopeflow/storage on the server) is used as-is.
+export const storage = (): Storage => new LocalStorage(resolve(process.cwd(), config().STORAGE_DIR));
 
 /** Logo formats we accept, recognised by their leading bytes rather than the file name. SVG is excluded: it can carry script. */
 export function detectImageType(data: Buffer): "png" | "jpg" | "webp" | null {

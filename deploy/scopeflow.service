@@ -1,0 +1,37 @@
+[Unit]
+Description=ScopeFlow
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=scopeflow
+Group=scopeflow
+WorkingDirectory=/opt/scopeflow/current
+EnvironmentFile=/etc/scopeflow/scopeflow.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+# Listen on this machine only; nginx is the only way in.
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/scopeflow
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
