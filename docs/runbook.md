@@ -66,8 +66,8 @@ Backups live on the same server, so they don't protect against losing the server
 ## Adding another consultancy (white label)
 
 ```
-cd /opt/scopeflow/current-src && set -a && . /etc/scopeflow/scopeflow.env && set +a && \
-sudo -E -u scopeflow npx --no-install tsx scripts/create-tenant.ts --slug acme --name "Acme Consulting" \
+cd /opt/scopeflow/current-src && \
+sudo -u scopeflow env HOME=/opt/scopeflow/build scopeflow-env npx --no-install tsx scripts/create-tenant.ts --slug acme --name "Acme Consulting" \
   --admin-email admin@acme.example --hostname scope.acme.example --verified
 ```
 

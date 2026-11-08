@@ -14,7 +14,9 @@ set_value() {
   local key="$1" value="$2" tmp
   tmp="$(mktemp)"
   grep -v -E "^$key=" "$ENV_FILE" > "$tmp" || true
-  printf '%s=%s\n' "$key" "$value" >> "$tmp"
+  # Double-quoted with \ and " escaped, which systemd and scopeflow-env both read back literally.
+  value="${value//\\/\\\\}"; value="${value//\"/\\\"}"
+  printf '%s="%s"\n' "$key" "$value" >> "$tmp"
   cat "$tmp" > "$ENV_FILE"
   rm -f "$tmp"
 }

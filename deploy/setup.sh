@@ -98,7 +98,7 @@ TRUST_PROXY=true
 STORAGE_DIR=$DATA_DIR/storage
 # Email: set with scopeflow-set-mail. Until then, sign-in codes appear in: journalctl -u scopeflow
 MAIL_TRANSPORT=console
-MAIL_FROM=ScopeFlow <no-reply@chayse.com>
+MAIL_FROM="ScopeFlow <no-reply@chayse.com>"
 SMTP_HOST=send.one.com
 SMTP_PORT=587
 SMTP_USER=
@@ -111,8 +111,12 @@ EOF
   umask 022
 fi
 
+# Older versions wrote MAIL_FROM unquoted; quote it so every reader agrees.
+sed -i 's/^MAIL_FROM=\([^"].*<.*>\)$/MAIL_FROM="\1"/' "$ENV_FILE"
+
 # ---------------------------------------------------------------- helper commands
 say "Installing helper commands"
+install -m 0755 "$REPO_DIR/deploy/env.sh" /usr/local/bin/scopeflow-env
 install -m 0755 "$REPO_DIR/deploy/update.sh" /usr/local/bin/scopeflow-update
 install -m 0755 "$REPO_DIR/deploy/set-mail.sh" /usr/local/bin/scopeflow-set-mail
 install -m 0755 "$REPO_DIR/deploy/set-ai-key.sh" /usr/local/bin/scopeflow-set-ai-key
@@ -138,8 +142,7 @@ if [ ! -f "$BASE/.tenant-created" ]; then
   say "Creating the Chayse Consulting workspace"
   (
     cd "$BASE/current-src"
-    set -a; . "$ENV_FILE"; set +a
-    sudo -E -u "$APP_USER" npx --no-install tsx scripts/create-tenant.ts \
+    sudo -u "$APP_USER" env HOME="$BASE/build" /usr/local/bin/scopeflow-env npx --no-install tsx scripts/create-tenant.ts \
       --slug chayse --name "Chayse Consulting" --admin-email "$ADMIN_EMAIL" \
       --hostname "$DOMAIN" --verified
   )

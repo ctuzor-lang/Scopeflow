@@ -8,7 +8,7 @@ ENV_FILE=/etc/scopeflow/scopeflow.env
 read -r -s -p "Anthropic API key (leave empty to remove; not shown): " KEY; echo
 tmp="$(mktemp)"
 grep -v -E '^ANTHROPIC_API_KEY=' "$ENV_FILE" > "$tmp" || true
-printf 'ANTHROPIC_API_KEY=%s\n' "$KEY" >> "$tmp"
+printf 'ANTHROPIC_API_KEY="%s"\n' "$KEY" >> "$tmp"
 cat "$tmp" > "$ENV_FILE"
 rm -f "$tmp"
 systemctl restart scopeflow

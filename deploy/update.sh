@@ -50,8 +50,7 @@ chmod -R go-w "$RELEASE"
 say "Updating the database"
 (
   cd "$SRC"
-  set -a; . "$ENV_FILE"; set +a
-  sudo -E -u "$APP_USER" env HOME="$BASE/build" npx --no-install tsx scripts/migrate.ts
+  sudo -u "$APP_USER" env HOME="$BASE/build" /usr/local/bin/scopeflow-env npx --no-install tsx scripts/migrate.ts
 )
 
 PREVIOUS="$(readlink -f "$BASE/current" 2>/dev/null || true)"
