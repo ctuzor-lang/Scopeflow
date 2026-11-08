@@ -1,3 +1,5 @@
+// Regenerates public/tour/*.jpg by walking the demo end to end against a local production build
+// (hosts demo.test and bright.test mapped to 127.0.0.1:3100). Usage: OUT=public/tour node scripts/tour-screenshots.cjs
 const { chromium } = require('playwright');
 const OUT = process.env.OUT;
 (async () => {
