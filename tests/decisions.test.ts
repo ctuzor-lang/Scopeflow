@@ -119,8 +119,10 @@ describe("client decisions", () => {
     expect((await getChangeRequest(s.tenantId, s.projectId, 1))?.status).toBe("approved");
     const d = (await getDecision(s.cr.id))!;
     expect(d).toMatchObject({ outcome: "approved", revNo: 1, revisionDigest: s.r1.digest, decidedBy: s.approverEmail });
-    expect(d.authorityStatement).toContain("on behalf of Northwind Retail");
-    expect(d.authorityStatement).toContain("CR-001 assessment R1");
+    expect(d.authorityStatement).toContain("I confirm I am authorised by Northwind Retail");
+    expect(d.authorityStatement).toContain("This varies the agreed scope under the change control terms");
+    expect(d.authorityStatement).toMatch(/fingerprint [0-9a-f]{12}/);
+    expect(d.authorityStatement).toContain("CR-001 as set out in assessment R1");
     expect(d.authorityStatement).toContain("£14,200");
     expect(sentMail.some((m) => m.to === s.adminEmail && m.subject.startsWith("CR-001 approved"))).toBe(true);
   });

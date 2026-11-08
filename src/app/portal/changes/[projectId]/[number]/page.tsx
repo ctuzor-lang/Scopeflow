@@ -29,7 +29,7 @@ export default async function ClientChangePage({ params }: { params: Promise<{ p
   const [revisions, decision, comments] = await Promise.all([listRevisions(cr.id), getDecision(cr.id), listComments(cr.id)]);
   const latest = revisions[0];
   if (!latest) notFound();
-  const statement = authorityStatement({ clientName: project.clientName, ref: cr.ref, revNo: latest.revNo, payload: latest.payload });
+  const statement = authorityStatement({ clientName: project.clientName, agencyName: tenant.branding.displayName, projectName: project.name, ref: cr.ref, revNo: latest.revNo, digest: latest.digest, payload: latest.payload });
   const canDecide = role === "approver" && cr.status === "awaiting_client";
 
   return (

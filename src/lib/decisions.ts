@@ -10,14 +10,36 @@ import type { Tenant } from "./tenant";
  * before real client use (FRS-001 §3.2). It names the exact revision, amount and
  * organisation so the record stands on its own.
  */
-export function authorityStatement(p: { clientName: string; ref: string; revNo: number; payload: AssessmentPayload }): string {
+/**
+ * The words an approver ticks. They are stored with the decision and quoted on the change control note,
+ * so they must stand on their own: who is bound, what exactly is approved (revision + fingerprint),
+ * the commercial terms, and that this is a variation under the parties' agreement.
+ * Draft wording — to be confirmed by a solicitor (docs/legal-review.md).
+ */
+export function authorityStatement(p: {
+  clientName: string;
+  agencyName: string;
+  projectName: string;
+  ref: string;
+  revNo: number;
+  digest: string;
+  payload: AssessmentPayload;
+}): string {
+  const amount = formatMoney(p.payload.price.amountMinor, p.payload.price.currency);
   const price =
     p.payload.price.basis === "no_charge"
-      ? "at no charge"
-      : `${p.payload.price.basis === "estimate" ? "at an estimated" : "at a fixed price of"} ${formatMoney(p.payload.price.amountMinor, p.payload.price.currency)} excluding VAT`;
+      ? "at no additional charge"
+      : p.payload.price.basis === "estimate"
+        ? `for an estimated ${amount} excluding VAT, to be charged as set out in our agreement`
+        : `for a fixed price of ${amount} excluding VAT`;
+  const days = p.payload.scheduleDays;
+  const schedule =
+    days === 0 ? "with no change to the schedule" : `with a schedule impact of ${days > 0 ? "+" : ""}${days} working day${Math.abs(days) === 1 ? "" : "s"}`;
   return (
-    `I am authorised to approve this change on behalf of ${p.clientName}. ` +
-    `I approve ${p.ref} assessment R${p.revNo} ${price}, with a schedule impact of ${p.payload.scheduleDays} working days. ` +
+    `I confirm I am authorised by ${p.clientName} to approve changes to ${p.projectName}. ` +
+    `On behalf of ${p.clientName}, I approve ${p.ref} as set out in assessment R${p.revNo} (fingerprint ${p.digest.replace(/^sha256:/, "").slice(0, 12)}), ` +
+    `${price}, ${schedule}. ` +
+    `This varies the agreed scope under the change control terms of our agreement with ${p.agencyName}; all other terms are unchanged. ` +
     `My approval applies to this revision only.`
   );
 }
@@ -117,7 +139,7 @@ export async function decideChange(p: {
     }
     const ref = crRef(p.number);
     const statement =
-      p.outcome === "approved" ? authorityStatement({ clientName: cr.client_name, ref, revNo: latest.rev_no, payload: latest.payload }) : null;
+      p.outcome === "approved" ? authorityStatement({ clientName: cr.client_name, agencyName: p.tenant.branding.displayName, projectName: cr.project_name, ref, revNo: latest.rev_no, digest: latest.content_digest, payload: latest.payload }) : null;
     await db.query(
       `insert into change_decision (tenant_id, change_request_id, impact_revision_id, rev_no, revision_digest, outcome,
                                     decided_by, authority_statement, comment, ip, user_agent)

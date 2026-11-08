@@ -99,7 +99,7 @@ describe("change control note", () => {
       "£13,800 excl. VAT",
       "9–12 days",
       "+10 working days",
-      "on behalf of Northwind Retail",
+      "authorised by Northwind Retail",
       "Put into effect in agreed version 2",
     ]) {
       expect(text).toContain(expected);
