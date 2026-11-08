@@ -59,3 +59,9 @@ app listens on 127.0.0.1 and is reachable solely through the web server in front
   domains verified, so it must only be used for domains the operator controls.
 - Logos are stored on local disk; move to S3-compatible storage before running more than one server.
 - Audit chain verification exists (`verifyAuditChain`) but nothing runs it on a schedule yet.
+
+## Observed after going live (8 Nov 2026)
+
+- Within minutes of DNS going live, automated scanners sent bogus Next.js server-action IDs ("Server Reference ID did not match"). They were rejected. Consider rate limiting or blocking at nginx, and log monitoring.
+- `npm audit --omit=dev`: postcss (via next, build-time only, no untrusted CSS processed) and uuid (via exceljs, the affected buffer API isn't used). Re-check when Next 16 / exceljs updates are adopted.
+- Sign-in codes were written to the server log until SMTP was configured. Once email is on, the log no longer contains codes; older journal entries age out under journald's normal rotation.
